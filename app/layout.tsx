@@ -43,9 +43,11 @@ export default function RootLayout({
       <body className="h-full bg-background font-sans text-foreground antialiased">
         <SidebarProvider>
           <AppSidebar />
-          <main>
+          <main className="flex w-full flex-1 flex-col">
             <SidebarTrigger />
-            <TooltipProvider>{children}</TooltipProvider>
+            <TooltipProvider>
+              <div className="mx-6">{children}</div>
+            </TooltipProvider>
           </main>
         </SidebarProvider>
       </body>
