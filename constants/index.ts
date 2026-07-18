@@ -2,6 +2,8 @@ export type VersionStatus = "draft" | "in_review" | "published" | "superseded";
 
 export type GuidelineStatus = "draft" | "in_review" | "published" | "archived";
 
+export type GuidelineType = "Compendium" | "Interim";
+
 export type GuidelineVersion = {
     id: string;
     guideline_id: string;
@@ -18,14 +20,14 @@ export type GuidelineVersion = {
 export type Author = {
   name: string;
   affiliation?: string;
-  orcid?: string;
+  position: string;
 };
 
 export type Guideline = {
     id: string;
     title: string;
     short_title: string | null;
-    guideline_type: string | null;
+    guideline_type: GuidelineType;
     specialty_tags: string[];
     societies: string[];
     authors: Author[];

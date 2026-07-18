@@ -15,7 +15,7 @@ const Banner = () => {
       />
 
       <div className="flex w-full items-end justify-end px-8 py-6 bg-[#2F6B4F] rounded-xl">
-        <Link href={"/guidelines"}>
+        <Link href={"/guidelines/create_guideline"}>
           <Button
             variant="outline"
             className="bg-[#2F6B4F] text-white hover:bg-amber-50/25 hover:text-white"

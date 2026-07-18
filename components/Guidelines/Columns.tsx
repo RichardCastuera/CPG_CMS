@@ -112,12 +112,19 @@ export const columns: ColumnDef<GuidelineWithVersions>[] = [
   {
     accessorKey: "guideline_type",
     header: ({ column }) => sortData(column, "Type"),
+    cell: ({ row }) => (
+      <span className="text-xs text-muted-foreground whitespace-normal break-words">
+        {row.original.guideline_type}
+      </span>
+    ),
   },
   {
     accessorKey: "updated_at",
     header: "Updated",
     cell: ({ row }) => (
-      <span className="text-sm">{timeAgo(row.original.updated_at)}</span>
+      <span className="text-xs text-muted-foreground whitespace-normal break-words">
+        {timeAgo(row.original.updated_at)}
+      </span>
     ),
   },
   {
