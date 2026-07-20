@@ -22,7 +22,7 @@ export function ConditionalSidebar({
     return (
       <main className="flex w-full flex-1 flex-col">
         <TooltipProvider>
-          <div className="mx-6">{children}</div>
+          <div>{children}</div>
         </TooltipProvider>
       </main>
     );
