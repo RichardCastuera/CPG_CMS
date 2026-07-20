@@ -73,7 +73,7 @@ const Navbar = ({
         </Button> */}
 
           <Button
-            className="gap-4"
+            className="gap-2 bg-[#2F6B4F] hover:bg-[#2F6B4F]/95"
             onClick={onPublish}
             disabled={isPublishing || publishDisabled}
           >

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ConditionalSidebar } from "@/components/ConditionalSidebar";
+import { QueryProvider } from "@/components/providers/QueryProviders";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -32,7 +33,9 @@ export default function RootLayout({
       )}
     >
       <body className="h-full bg-background font-sans text-foreground antialiased">
-        <ConditionalSidebar>{children}</ConditionalSidebar>
+        <QueryProvider>
+          <ConditionalSidebar>{children}</ConditionalSidebar>
+        </QueryProvider>
       </body>
     </html>
   );

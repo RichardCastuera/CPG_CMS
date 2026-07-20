@@ -133,6 +133,9 @@
   h2 {
     @apply text-2xl font-semibold text-[#212B2E];
   }
+  h4{
+    @apply text-[16px] font-semibold text-[#212B2E];
+  }
   h6 {
     @apply text-[12px] font-medium text-[#212B2E];
   }
