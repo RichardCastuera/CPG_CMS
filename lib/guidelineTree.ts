@@ -177,3 +177,47 @@ export function moveAdjacent(tree: GuidelineTree, id: string, direction: "up" | 
   [arr[loc.index], arr[targetIndex]] = [arr[targetIndex], arr[loc.index]];
   return newTree;
 }
+
+
+export interface SectionNode {
+  id: string;
+  type: "section";
+  title: string;
+  status: NodeStatus;
+  overview?: string; // HTML from Tiptap
+  children: QuestionNode[];
+}
+
+export interface QuestionNode {
+  id: string;
+  type: "question";
+  title: string;
+  status: NodeStatus;
+  clinicalQuestion?: string;
+  background?: string; // HTML
+  children: RecommendationNode[];
+}
+
+export interface RecommendationNode {
+  id: string;
+  type: "recommendation";
+  title: string;
+  number: string;
+  status: NodeStatus;
+  strength?: string;
+  certaintyOfEvidence?: string;
+  statement?: string; // HTML
+}
+
+export function updateNodeField<T extends AnyNode>(
+  tree: GuidelineTree,
+  id: string,
+  field: string,
+  value: string
+): GuidelineTree {
+  const newTree: GuidelineTree = structuredClone(tree);
+  const loc = findNodeLocation(newTree, id);
+  if (!loc) return tree;
+  (loc.node as never)[field] = value;
+  return newTree;
+}
