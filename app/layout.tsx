@@ -2,17 +2,10 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/SideBar";
+import { ConditionalSidebar } from "@/components/ConditionalSidebar";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
@@ -25,9 +18,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en"
@@ -41,15 +32,7 @@ export default function RootLayout({
       )}
     >
       <body className="h-full bg-background font-sans text-foreground antialiased">
-        <SidebarProvider>
-          <AppSidebar />
-          <main className="flex w-full flex-1 flex-col">
-            <SidebarTrigger />
-            <TooltipProvider>
-              <div className="mx-6">{children}</div>
-            </TooltipProvider>
-          </main>
-        </SidebarProvider>
+        <ConditionalSidebar>{children}</ConditionalSidebar>
       </body>
     </html>
   );
