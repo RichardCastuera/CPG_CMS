@@ -25,7 +25,13 @@ async function fetchAllArtifacts(): Promise<LibraryArtifact[]> {
   return res.json();
 }
 
-export function useArtifactLibrary({ guidelineId, category }: UseArtifactLibraryOptions) {
+interface UseArtifactLibraryOptions {
+  guidelineId?: string;
+  category?: ArtifactCategory | "all";
+  search?: string;
+}
+
+export function useArtifactLibrary({ guidelineId, category, search }: UseArtifactLibraryOptions) {
   const query = useQuery({
     queryKey: ["artifact-library"],
     queryFn: fetchAllArtifacts,
@@ -35,8 +41,12 @@ export function useArtifactLibrary({ guidelineId, category }: UseArtifactLibrary
     let result = query.data ?? [];
     if (guidelineId) result = result.filter((a) => a.guidelineId === guidelineId);
     if (category && category !== "all") result = result.filter((a) => a.category === category);
+    if (search && search.trim()) {
+      const q = search.trim().toLowerCase();
+      result = result.filter((a) => a.name.toLowerCase().includes(q));
+    }
     return result;
-  }, [query.data, guidelineId, category]);
+  }, [query.data, guidelineId, category, search]);
 
   return {
     items,
