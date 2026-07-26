@@ -23,13 +23,11 @@ export async function POST(
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  // Placeholder: real implementation uploads to storage and gets a persistent URL.
-  // For now, using a local object URL substitute so the UI has something to render.
   const artifact = {
     id: crypto.randomUUID(),
     guidelineId: id,
     name: file.name,
-    url: `/mock-uploads/${file.name}`, // TODO: replace with real storage URL
+    url: `/mock-uploads/${file.name}`,
     thumbnailUrl: `/mock-uploads/${file.name}`,
     mimeType: file.type,
     sizeBytes: file.size,

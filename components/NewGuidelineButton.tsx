@@ -13,7 +13,7 @@ export function NewGuidelineButton({ className }: NewGuidelineButtonProps) {
       <Button
         variant="outline"
         className={cn(
-          "bg-[#2F6B4F] text-white hover:bg-amber-50/25 hover:text-white",
+          "bg-[#2F6B4F] text-white hover:bg-[#2F6B4F]/85 hover:text-white",
           className,
         )}
       >
