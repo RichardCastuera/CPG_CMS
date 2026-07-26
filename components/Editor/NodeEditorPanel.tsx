@@ -30,8 +30,7 @@ export function NodeEditorPanel({
 
   if (node.type === "section") {
     return (
-      <div className="mx-auto max-w-2xl space-y-6 p-6">
-        <h2>Guideline Title</h2>
+      <div className="space-y-6 p-6">
         <Card className="px-6">
           <div>
             <label className="mb-1 block text-sm font-medium">
@@ -57,8 +56,7 @@ export function NodeEditorPanel({
 
   if (node.type === "question") {
     return (
-      <div className="mx-auto max-w-2xl space-y-6 p-6">
-        <h2>Guideline Title</h2>
+      <div className="space-y-6 p-6">
         <Card className="px-6">
           <div>
             <label className="mb-1 block text-sm font-medium">
@@ -86,8 +84,7 @@ export function NodeEditorPanel({
 
   // recommendation
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-6">
-      <h2>Guideline Title</h2>
+    <div className="space-y-6 p-6">
       <Card className="px-6">
         <div>
           <label className="mb-1 block text-sm font-medium">

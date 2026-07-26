@@ -1,4 +1,3 @@
-// app/api/guidelines/[id]/nodes/[nodeId]/comments/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
 const mockComments: Record<string, any[]> = {};

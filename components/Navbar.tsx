@@ -1,8 +1,9 @@
-import React from "react";
 import Branding from "./Branding";
 import { Button } from "./ui/button";
 import { Send, CloudCheck, Cloud, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Info } from "lucide-react";
+import Link from "next/link";
 
 export type AutosaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -58,13 +59,21 @@ const Navbar = ({
 }: NavbarProps) => {
   return (
     <>
-      <nav className="flex items-center justify-between py-2 mx-6">
+      <nav className="flex items-center justify-between py-2 mx-6 bg-white">
         <Branding />
         <div className="flex items-center gap-4">
           <AutosaveIndicator
             status={autosaveStatus}
             lastSavedAt={lastSavedAt}
           />
+          {/* <Link href={`guidelines/create_guideline/${guideline.id}`}> */}
+          <Button variant={"outline"}>
+            <Info size={24} />
+            Guideline Info
+          </Button>
+          {/* </Link> */}
+
+          <div className="h-full w-px bg-gray-800"></div>
 
           {/* This will be made available once reviewer is established. Focus on admin tasks first */}
           {/* <Button variant={"outline"} className={"gap-4"}>

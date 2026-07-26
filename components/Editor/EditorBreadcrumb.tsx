@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronRight, PanelLeft } from "lucide-react";
-import { AnyNode, findNodeLocation, GuidelineTree } from "@/lib/guidelineTree";
+import { ChevronRight, Clock } from "lucide-react";
+import { AnyNode, GuidelineTree } from "@/lib/guidelineTree";
 import { AutosaveStatus } from "@/lib/hooks/useAutoSave";
 
 interface EditorBreadcrumbProps {
@@ -33,39 +33,44 @@ export function EditorBreadcrumb({
           : null;
 
   return (
-    <div className="flex items-center justify-between border-b px-3 py-1.5 text-xs text-muted-foreground mx-2">
-      <div className="flex items-center gap-1.5">
-        <PanelLeft size={14} />
-        <span>Last edited by {editedByLabel}</span>
-        <span>·</span>
-        <span>just now</span>
-        <span>·</span>
-        <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">
-          Edited
-        </span>
-      </div>
-
-      <div className="flex items-center gap-1">
-        {path.map((node, i) => (
-          <span key={node.id} className="flex items-center gap-1">
-            {i > 0 && <ChevronRight size={12} />}
-            <span
-              className={
-                i === path.length - 1 ? "font-medium text-foreground" : ""
-              }
-            >
-              {node.title}
-            </span>
+    <>
+      <div className="flex items-center justify-between border-b px-3 py-1.5 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <Clock size={14} />
+          <span>Last edited by {editedByLabel}</span>
+          <span>·</span>
+          <span>just now</span>
+          <span>·</span>
+          <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">
+            Edited
           </span>
-        ))}
+        </div>
       </div>
+      <div className="flex items-center justify-between bg-white border-b px-3 py-1.5 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1">
+          {path.map((node, i) => (
+            <span key={node.id} className="flex items-center gap-1">
+              {i > 0 && <ChevronRight size={12} />}
+              <span
+                className={
+                  i === path.length - 1 ? "font-medium text-foreground" : ""
+                }
+              >
+                {node.title}
+              </span>
+            </span>
+          ))}
+        </div>
 
-      {statusLabel && (
-        <span className={autosaveStatus === "error" ? "text-destructive" : ""}>
-          {statusLabel === "Saving..." ? statusLabel : `✓ ${statusLabel}`}
-        </span>
-      )}
-    </div>
+        {statusLabel && (
+          <span
+            className={autosaveStatus === "error" ? "text-destructive" : ""}
+          >
+            {statusLabel === "Saving..." ? statusLabel : `✓ ${statusLabel}`}
+          </span>
+        )}
+      </div>
+    </>
   );
 }
 

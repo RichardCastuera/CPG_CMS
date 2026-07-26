@@ -35,7 +35,7 @@ export function CommentsPanel({
   const resolved = comments.filter((c) => c.resolved);
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex flex-col h-full overflow-hidden">
       <div className="flex-1 space-y-3 overflow-y-auto p-3">
         {isLoading && (
           <p className="text-xs text-muted-foreground">Loading...</p>
@@ -77,7 +77,7 @@ export function CommentsPanel({
         )}
       </div>
 
-      <div className="flex items-end gap-2 border-t p-3">
+      <div className="flex items-center gap-2 border-t p-3">
         <textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -126,7 +126,7 @@ function CommentRow({
         </div>
         <p
           className={cn(
-            "mt-0.5 text-sm text-foreground/90",
+            "mt-0.5 text-xs text-foreground/90 break-words",
             comment.resolved && "line-through",
           )}
         >
