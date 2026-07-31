@@ -22,6 +22,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { ArtifactCategory } from "@/lib/artifacts";
 import { ARTIFACT_CATEGORY_STYLES } from "@/lib/artifactCategoryStyles";
+import { GuidelineWithVersions } from "@/constants";
 
 const UPLOADABLE_CATEGORIES: ArtifactCategory[] = [
   "figure",
@@ -30,12 +31,7 @@ const UPLOADABLE_CATEGORIES: ArtifactCategory[] = [
   "chart",
 ];
 
-interface GuidelineOption {
-  id: string;
-  title: string;
-}
-
-async function fetchGuidelines(): Promise<GuidelineOption[]> {
+async function fetchGuidelines(): Promise<GuidelineWithVersions[]> {
   const res = await fetch("/api/guidelines");
   if (!res.ok) throw new Error("Failed to load guidelines");
   return res.json();

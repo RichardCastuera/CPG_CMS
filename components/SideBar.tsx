@@ -10,6 +10,7 @@ import {
   Users,
   History,
   LogOut,
+  ArchiveIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -32,6 +33,7 @@ const navItems = [
   { title: "Reviews", url: "/reviews", icon: ClipboardCheck },
   { title: "Artifacts", url: "/artifacts", icon: Archive },
   { title: "References", url: "/references", icon: BookMarked },
+  { title: "Archives", url: "/archives", icon: ArchiveIcon },
   { title: "Users", url: "/users", icon: Users },
   { title: "Audit Log", url: "/logs", icon: History },
 ];

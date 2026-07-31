@@ -1,17 +1,25 @@
+"use client";
+
 import Branding from "./Branding";
 import { Button } from "./ui/button";
-import { Send, CloudCheck, Cloud, Loader2 } from "lucide-react";
+import {
+  Send,
+  CloudCheck,
+  Cloud,
+  Loader2,
+  SlidersHorizontal,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Info } from "lucide-react";
-import Link from "next/link";
 
 export type AutosaveStatus = "idle" | "saving" | "saved" | "error";
 
 interface NavbarProps {
   autosaveStatus?: AutosaveStatus;
   lastSavedAt?: Date | null;
-  onPublish?: () => void | Promise<void>;
-  isPublishing?: boolean;
+  guidelineType?: "Compendium" | "Interim"; // drives the primary action's label/behavior
+  onSubmitOrPublish?: () => void | Promise<void>;
+  onOpenGuidelineInfo?: () => void;
+  isSubmitting?: boolean;
   publishDisabled?: boolean;
 }
 
@@ -53,10 +61,19 @@ const AutosaveIndicator = ({
 const Navbar = ({
   autosaveStatus = "idle",
   lastSavedAt,
-  onPublish,
-  isPublishing = false,
+  guidelineType,
+  onSubmitOrPublish,
+  onOpenGuidelineInfo,
+  isSubmitting = false,
   publishDisabled = false,
 }: NavbarProps) => {
+  // Compendium guidelines are already externally vetted, so the primary
+  // action publishes immediately. Interim guidelines require review, so
+  // the same button submits for review instead. See submit_or_publish_guideline().
+  const isCompendium = guidelineType === "Compendium";
+  const actionLabel = isCompendium ? "Publish" : "Submit for review";
+  const actionLabelLoading = isCompendium ? "Publishing..." : "Submitting...";
+
   return (
     <>
       <nav className="flex items-center justify-between py-2 mx-6 bg-white">
@@ -66,12 +83,15 @@ const Navbar = ({
             status={autosaveStatus}
             lastSavedAt={lastSavedAt}
           />
-          {/* <Link href={`guidelines/create_guideline/${guideline.id}`}> */}
-          <Button variant={"outline"}>
-            <Info size={24} />
-            Guideline Info
+
+          <Button
+            variant="outline"
+            onClick={onOpenGuidelineInfo}
+            className="gap-2"
+          >
+            <SlidersHorizontal size={16} />
+            Guideline info
           </Button>
-          {/* </Link> */}
 
           <div className="h-full w-px bg-gray-800"></div>
 
@@ -83,15 +103,15 @@ const Navbar = ({
 
           <Button
             className="gap-2 bg-[#2F6B4F] hover:bg-[#2F6B4F]/95"
-            onClick={onPublish}
-            disabled={isPublishing || publishDisabled}
+            onClick={onSubmitOrPublish}
+            disabled={isSubmitting || publishDisabled}
           >
-            {isPublishing ? (
+            {isSubmitting ? (
               <Loader2 size={24} className="animate-spin" />
             ) : (
               <Send size={24} />
             )}
-            {isPublishing ? "Publishing..." : "Publish"}
+            {isSubmitting ? actionLabelLoading : actionLabel}
           </Button>
         </div>
       </nav>

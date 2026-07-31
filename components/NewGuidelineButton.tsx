@@ -1,25 +1,36 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface NewGuidelineButtonProps {
   className?: string;
+  href: string;
+  icon?: React.ReactNode;
+  title: string;
 }
 
-export function NewGuidelineButton({ className }: NewGuidelineButtonProps) {
+export function NewGuidelineButton({
+  className,
+  href,
+  icon,
+  title,
+}: NewGuidelineButtonProps) {
   return (
-    <Link href="/guidelines/create_guideline">
-      <Button
-        variant="outline"
-        className={cn(
-          "bg-[#2F6B4F] text-white hover:bg-[#2F6B4F]/85 hover:text-white",
-          className,
-        )}
-      >
-        <Plus height={24} width={24} className="text-white" />
-        New guideline
-      </Button>
-    </Link>
+    <Button
+      asChild
+      variant="outline"
+      className={cn(
+        "bg-[#2F6B4F] text-white hover:bg-[#2F6B4F]/85 hover:text-white gap-2",
+        className,
+      )}
+    >
+      <Link href={href}>
+        <div className="flex items-center gap-2">
+          {icon}
+          <span>{title}</span>
+        </div>
+      </Link>
+    </Button>
   );
 }

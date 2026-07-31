@@ -4,11 +4,16 @@ import { AnyNode, findNodeLocation, GuidelineTree } from "@/lib/guidelineTree";
 import { RichTextEditor } from "./RichTextEditor";
 import { RecommendationMetaFields } from "./RecommendationsMetaFields";
 import { Card } from "../ui/card";
+import type { JSONContent } from "@tiptap/react";
 
 interface NodeEditorPanelProps {
   tree: GuidelineTree;
   activeNodeId: string | null;
-  onFieldChange: (nodeId: string, field: string, value: string) => void;
+  onFieldChange: (
+    nodeId: string,
+    field: string,
+    value: string | JSONContent,
+  ) => void;
 }
 
 export function NodeEditorPanel({
@@ -45,8 +50,8 @@ export function NodeEditorPanel({
           <div>
             <label className="mb-1 block text-sm font-medium">Overview</label>
             <RichTextEditor
-              content={node.overview ?? ""}
-              onChange={(html) => onFieldChange(node.id, "overview", html)}
+              content={node.overview ?? null}
+              onChange={(json) => onFieldChange(node.id, "overview", json)}
             />
           </div>
         </Card>
@@ -73,8 +78,8 @@ export function NodeEditorPanel({
           <div>
             <label className="mb-1 block text-sm font-medium">Background</label>
             <RichTextEditor
-              content={node.background ?? ""}
-              onChange={(html) => onFieldChange(node.id, "background", html)}
+              content={node.background ?? null}
+              onChange={(json) => onFieldChange(node.id, "background", json)}
             />
           </div>
         </Card>
@@ -121,8 +126,26 @@ export function NodeEditorPanel({
         <div>
           <label className="mb-1 block text-sm font-medium">Statement</label>
           <RichTextEditor
-            content={node.statement ?? ""}
-            onChange={(html) => onFieldChange(node.id, "statement", html)}
+            content={node.statement ?? null}
+            onChange={(json) => onFieldChange(node.id, "statement", json)}
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium">Comment</label>
+          <RichTextEditor
+            content={node.comment ?? null}
+            onChange={(json) => onFieldChange(node.id, "comment", json)}
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium">
+            Evidence Summary
+          </label>
+          <RichTextEditor
+            content={node.evidenceSummary ?? null}
+            onChange={(json) => onFieldChange(node.id, "evidenceSummary", json)}
           />
         </div>
       </Card>

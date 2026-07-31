@@ -1,7 +1,9 @@
 "use client";
 
+import { Reference, useState } from "react";
 import { X, Plus, Search } from "lucide-react";
-import { AttachedReference, Reference } from "@/lib/references";
+import { AttachedReference, NewReferenceInput } from "@/lib/references";
+import { NewReferenceDialog } from "../Reference/NewReferenceDialog";
 
 interface ReferencesPanelProps {
   attached: AttachedReference[];
@@ -11,6 +13,8 @@ interface ReferencesPanelProps {
   onQueryChange: (query: string) => void;
   attach: (referenceId: string) => void;
   detach: (referenceId: string) => void;
+  createAndAttach: (input: NewReferenceInput) => void;
+  isCreating?: boolean;
 }
 
 export function ReferencesPanel({
@@ -21,7 +25,16 @@ export function ReferencesPanel({
   onQueryChange,
   attach,
   detach,
+  createAndAttach,
+  isCreating = false,
 }: ReferencesPanelProps) {
+  const [newRefOpen, setNewRefOpen] = useState(false);
+
+  function handleCreate(input: NewReferenceInput) {
+    createAndAttach(input);
+    setNewRefOpen(false);
+  }
+
   return (
     <div className="space-y-4 p-3">
       <div>
@@ -56,7 +69,10 @@ export function ReferencesPanel({
           <p className="text-xs font-semibold uppercase text-muted-foreground">
             Add reference
           </p>
-          <button className="flex items-center gap-1 text-xs font-medium text-emerald-700 hover:underline">
+          <button
+            onClick={() => setNewRefOpen(true)}
+            className="flex items-center gap-1 text-xs font-medium text-emerald-700 hover:underline"
+          >
             <Plus size={12} /> New
           </button>
         </div>
@@ -92,6 +108,13 @@ export function ReferencesPanel({
             </button>
           ))}
       </div>
+
+      <NewReferenceDialog
+        open={newRefOpen}
+        onOpenChange={setNewRefOpen}
+        onCreate={handleCreate}
+        isCreating={isCreating}
+      />
     </div>
   );
 }

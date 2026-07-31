@@ -184,7 +184,7 @@ export interface SectionNode {
   type: "section";
   title: string;
   status: NodeStatus;
-  overview?: string; // HTML from Tiptap
+  overview?: JSONContent;
   children: QuestionNode[];
 }
 
@@ -194,7 +194,7 @@ export interface QuestionNode {
   title: string;
   status: NodeStatus;
   clinicalQuestion?: string;
-  background?: string; // HTML
+  background?: JSONContent;
   children: RecommendationNode[];
 }
 
@@ -206,7 +206,9 @@ export interface RecommendationNode {
   status: NodeStatus;
   strength?: string;
   certaintyOfEvidence?: string;
-  statement?: string; // HTML
+  statement?: JSONContent;
+  comment?: JSONContent;
+  evidenceSummary?: JSONContent;
 }
 
 export function updateNodeField<T extends AnyNode>(

@@ -1,6 +1,4 @@
 export type ArtifactCategory = "figure" | "table" | "flowchart" | "chart" | "pdf";
-
-
 export interface Artifact {
   id: string;
   guidelineId: string;

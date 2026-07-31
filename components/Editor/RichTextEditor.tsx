@@ -1,6 +1,7 @@
 "use client";
 
 import { useEditor, EditorContent } from "@tiptap/react";
+import type { JSONContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Subscript } from "@tiptap/extension-subscript";
 import { Superscript } from "@tiptap/extension-superscript";
@@ -9,6 +10,8 @@ import { TableRow } from "@tiptap/extension-table-row";
 import { TableCell } from "@tiptap/extension-table-cell";
 import { TableHeader } from "@tiptap/extension-table-header";
 import { Image as TiptapImage } from "@tiptap/extension-image";
+import { useEffect } from "react";
+import { cn } from "@/lib/utils";
 import {
   Bold,
   Italic,
@@ -23,15 +26,13 @@ import {
   Undo,
   Redo,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useEffect } from "react";
 import { ImageInsertPopover } from "./ImageInsertPopover";
 
 interface RichTextEditorProps {
-  content: string;
-  onChange: (html: string) => void;
+  content: JSONContent | null;
+  onChange: (json: JSONContent) => void;
   placeholder?: string;
-  guidelineId?: string; // needed to fetch this guideline's artifacts
+  guidelineId?: string;
 }
 
 export function RichTextEditor({
@@ -42,11 +43,7 @@ export function RichTextEditor({
 }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        link: {
-          openOnClick: false,
-        },
-      }),
+      StarterKit.configure({ link: { openOnClick: false } }),
       Subscript,
       Superscript,
       Table.configure({ resizable: true }),
@@ -55,7 +52,7 @@ export function RichTextEditor({
       TableCell,
       TiptapImage,
     ],
-    content,
+    content: content ?? "",
     editorProps: {
       attributes: {
         class:
@@ -63,14 +60,20 @@ export function RichTextEditor({
       },
     },
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      onChange(editor.getJSON());
     },
     immediatelyRender: false,
   });
 
+  // JSON objects can't be compared with !==, so use a stringified check.
+  // This guards against the editor's own onUpdate loopback re-triggering
+  // an unnecessary setContent call.
   useEffect(() => {
-    if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content, false);
+    if (
+      editor &&
+      JSON.stringify(content) !== JSON.stringify(editor.getJSON())
+    ) {
+      editor.commands.setContent(content ?? "", false);
     }
   }, [content, editor]);
 
@@ -107,7 +110,6 @@ export function RichTextEditor({
   return (
     <div className="rounded-md border">
       <div className="flex items-center justify-between gap-1 border-b bg-muted/40 px-2 py-1">
-        {/* Left group: formatting tools */}
         <div className="flex flex-wrap items-center gap-1">
           <ToolbarButton
             active={editor.isActive("bold")}
@@ -127,9 +129,7 @@ export function RichTextEditor({
           >
             <UnderlineIcon size={16} />
           </ToolbarButton>
-
           <Divider />
-
           <ToolbarButton
             active={editor.isActive("bulletList")}
             onClick={() => editor.chain().focus().toggleBulletList().run()}
@@ -142,9 +142,7 @@ export function RichTextEditor({
           >
             <ListOrdered size={16} />
           </ToolbarButton>
-
           <Divider />
-
           <ToolbarButton
             active={editor.isActive("subscript")}
             onClick={() => editor.chain().focus().toggleSubscript().run()}
@@ -157,9 +155,7 @@ export function RichTextEditor({
           >
             <SuperscriptIcon size={16} />
           </ToolbarButton>
-
           <Divider />
-
           <ToolbarButton active={editor.isActive("link")} onClick={setLink}>
             <LinkIcon size={16} />
           </ToolbarButton>
@@ -172,8 +168,6 @@ export function RichTextEditor({
             </ToolbarButton>
           </ImageInsertPopover>
         </div>
-
-        {/* Right group: undo/redo */}
         <div className="flex items-center gap-1">
           <ToolbarButton onClick={() => editor.chain().focus().undo().run()}>
             <Undo size={16} />

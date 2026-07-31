@@ -2,9 +2,9 @@
 
 import { Column, ColumnDef } from "@tanstack/react-table";
 import { GuidelineWithVersions, VersionStatus } from "@/constants";
-import { GitBranch, ArrowRight, ArrowUpDown } from "lucide-react";
+import { ArrowUpDown } from "lucide-react";
 import { Button } from "../ui/button";
-import Link from "next/link";
+import { GuidelineActionsMenu } from "./GuidelineActionsMenu";
 
 const statusStyles: Record<VersionStatus, string> = {
   draft: "bg-amber-100 text-amber-800",
@@ -51,110 +51,108 @@ function timeAgo(dateString: string): string {
   return `${months} month${months === 1 ? "" : "s"} ago`;
 }
 
-export const columns: ColumnDef<GuidelineWithVersions>[] = [
-  {
-    accessorKey: "title",
-    header: "CPG",
-    cell: ({ row }) => {
-      const guideline = row.original;
-      const isParallel = hasParallelVersions(guideline.versions);
-      return (
-        <div className="flex flex-col gap-1 max-w-xs">
-          <span className="font-medium line-clamp-2 text-ellipsis overflow-hidden">
-            {guideline.title}
-          </span>
-          {isParallel && (
-            <span className="w-fit rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 border border-amber-200">
-              Parallel
-            </span>
-          )}
-          <span className="text-xs text-muted-foreground">
-            {guideline.societies.join(" · ")}
-          </span>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "specialty_tags",
-    header: "Topic",
-    cell: ({ row }) => (
-      <span className="text-xs text-muted-foreground whitespace-normal break-words">
-        {row.original.specialty_tags.join(", ")}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "versions",
-    header: "Versions",
-    cell: ({ row }) => {
-      const versions = row.original.versions;
-      const visible = versions.slice(0, 3);
-      const extra = versions.length - visible.length;
+interface GetColumnsHandlers {
+  onArchive: (id: string) => void;
+  onDelete: (id: string) => void;
+}
 
-      return (
-        <div className="flex flex-wrap items-center gap-1.5">
-          {visible.map((v) => (
-            <span
-              key={v.id}
-              className={`rounded-md px-2 py-0.5 text-xs font-medium ${statusStyles[v.status]}`}
-            >
-              {v.version_number} · {statusLabels[v.status]}
+export function getColumns(
+  handlers: GetColumnsHandlers,
+): ColumnDef<GuidelineWithVersions>[] {
+  return [
+    {
+      accessorKey: "title",
+      header: "CPG",
+      cell: ({ row }) => {
+        const guideline = row.original;
+        const isParallel = hasParallelVersions(guideline.versions);
+        return (
+          <div className="flex flex-col gap-1 max-w-xs">
+            <span className="font-medium line-clamp-2 text-ellipsis overflow-hidden">
+              {guideline.title}
             </span>
-          ))}
-          {extra > 0 && (
-            <span className="text-xs text-muted-foreground">+{extra} more</span>
-          )}
-        </div>
-      );
+            {isParallel && (
+              <span className="w-fit rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700 border border-amber-200">
+                Parallel
+              </span>
+            )}
+            <span className="text-xs text-muted-foreground">
+              {guideline.societies.join(" · ")}
+            </span>
+          </div>
+        );
+      },
     },
-  },
-  {
-    accessorKey: "guideline_type",
-    header: ({ column }) => sortData(column, "Type"),
-    cell: ({ row }) => (
-      <span className="text-xs text-muted-foreground whitespace-normal break-words">
-        {row.original.guideline_type}
-      </span>
-    ),
-  },
-  {
-    accessorKey: "updated_at",
-    header: "Updated",
-    cell: ({ row }) => (
-      <span className="text-xs text-muted-foreground whitespace-normal break-words">
-        {timeAgo(row.original.updated_at)}
-      </span>
-    ),
-  },
-  {
-    id: "actions",
-    header: "Actions",
-    cell: ({ row }) => {
-      const guideline = row.original;
-      const isParallel = hasParallelVersions(guideline.versions);
-      return (
-        <div className="flex items-center gap-2">
-          <button
-            className={`flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm font-medium ${
-              isParallel
-                ? "bg-emerald-700 text-white border-emerald-700"
-                : "bg-background"
-            }`}
-          >
-            <GitBranch className="h-3.5 w-3.5" />
-            Versions
-          </button>
-          <Link href={`/guidelines/${guideline.id}`}>
-            <button className="flex items-center gap-1 text-sm font-medium">
-              Open <ArrowRight className="h-3.5 w-3.5" />
-            </button>
-          </Link>
-        </div>
-      );
+    {
+      accessorKey: "specialty_tags",
+      header: "Topic",
+      cell: ({ row }) => (
+        <span className="text-xs text-muted-foreground whitespace-normal break-words">
+          {row.original.specialty_tags.join(", ")}
+        </span>
+      ),
     },
-  },
-];
+    {
+      accessorKey: "versions",
+      header: "Versions",
+      cell: ({ row }) => {
+        const versions = row.original.versions;
+        const visible = versions.slice(0, 3);
+        const extra = versions.length - visible.length;
+
+        return (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {visible.map((v) => (
+              <span
+                key={v.id}
+                className={`rounded-md px-2 py-0.5 text-xs font-medium ${statusStyles[v.status]}`}
+              >
+                {v.version_number} · {statusLabels[v.status]}
+              </span>
+            ))}
+            {extra > 0 && (
+              <span className="text-xs text-muted-foreground">
+                +{extra} more
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "guideline_type",
+      header: ({ column }) => sortData(column, "Type"),
+      cell: ({ row }) => (
+        <span className="text-xs text-muted-foreground whitespace-normal break-words">
+          {row.original.guideline_type}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "updated_at",
+      header: "Updated",
+      cell: ({ row }) => (
+        <span className="text-xs text-muted-foreground whitespace-normal break-words">
+          {timeAgo(row.original.updated_at)}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+        const guideline = row.original;
+        return (
+          <GuidelineActionsMenu
+            guideline={guideline}
+            onArchive={handlers.onArchive}
+            onDelete={handlers.onDelete}
+          />
+        );
+      },
+    },
+  ];
+}
 
 function sortData(
   column: Column<GuidelineWithVersions, unknown>,

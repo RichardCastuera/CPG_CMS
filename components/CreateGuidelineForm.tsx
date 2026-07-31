@@ -29,13 +29,12 @@ const formSchema = z.object({
     .string()
     .min(5, "Title must be at least 5 characters.")
     .max(160, "Title must be at most 160 characters."),
-  publishingSocieties: z.string().min(1, "Enter at least one society."),
-  topics: z.string().min(1, "Enter at least one topic."),
-  type: z.enum(["Compendium", "Interim"]),
+  guideline_type: z.enum(["Compendium", "Interim"]),
   status: z.enum(["draft", "in_review", "published", "archived"]),
-  version: z.string().min(1, "Enter a version number, e.g. v1.0."),
-  publicationDate: z.string().min(1, "Select a publication date."),
-  lastRevision: z.string().min(1, "Select a last revision date."),
+  publishingSocieties: z.string().min(1, "Enter at least one society."),
+  specialtyTags: z.string().min(1, "Enter at least one topic."),
+  version_number: z.string().min(1, "Enter a version number, e.g. v1.0."),
+  effective_date: z.string().min(1, "Select an effective date."),
   authors: z.array(
     z.object({
       name: z.string().min(1, "Name is required."),
@@ -56,13 +55,12 @@ export function CreateGuidelineForm({ onCancel }: CreateGuidelineFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
-      publishingSocieties: "",
-      topics: "",
-      type: undefined,
+      guideline_type: undefined,
       status: undefined,
-      version: "",
-      publicationDate: "",
-      lastRevision: "",
+      publishingSocieties: "",
+      specialtyTags: "",
+      version_number: "",
+      effective_date: "",
       authors: [{ name: "", position: "", affiliation: "" }],
     },
   });
@@ -76,23 +74,42 @@ export function CreateGuidelineForm({ onCancel }: CreateGuidelineFormProps) {
 
   async function onSubmit(data: FormValues) {
     const payload = {
-      ...data,
-      publishingSocieties: data.publishingSocieties
+      title: data.title,
+      guideline_type: data.guideline_type,
+      status: data.status,
+      societies: data.publishingSocieties
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean),
-      topics: data.topics
+      specialty_tags: data.specialtyTags
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean),
+      authors: data.authors,
+      // Hidden from the UI for now, but part of the real schema — sent as null
+      // so the record is complete and these fields can be surfaced later
+      // without a data migration.
+      short_title: null,
+      doi: null,
+      next_review_date: null,
+      version_number: data.version_number,
+      effective_date: data.effective_date,
     };
 
-    // TODO: replace with your actual Supabase insert
-    // const { data: newGuideline, error } = await supabase.from("guidelines").insert({...}).select().single();
-    // if (error) { /* show error toast */ return; }
+    try {
+      const res = await fetch("/api/guidelines", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    console.log(payload);
-    // router.push(`/guideline/${newGuideline.id}`);
+      if (!res.ok) throw new Error(`Failed to create guideline: ${res.status}`);
+
+      const { id } = await res.json();
+      router.push(`/guidelines/${id}`);
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   return (
@@ -154,16 +171,16 @@ export function CreateGuidelineForm({ onCancel }: CreateGuidelineFormProps) {
 
               <div className="grid grid-cols-2 gap-4">
                 <Controller
-                  name="topics"
+                  name="specialtyTags"
                   control={form.control}
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="guideline-topics">
+                      <FieldLabel htmlFor="guideline-specialty-tags">
                         Specialty / Topic tags
                       </FieldLabel>
                       <Input
                         {...field}
-                        id="guideline-topics"
+                        id="guideline-specialty-tags"
                         aria-invalid={fieldState.invalid}
                         placeholder="Infectious disease, Pulmonology"
                         autoComplete="off"
@@ -176,7 +193,7 @@ export function CreateGuidelineForm({ onCancel }: CreateGuidelineFormProps) {
                 />
 
                 <Controller
-                  name="type"
+                  name="guideline_type"
                   control={form.control}
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
@@ -238,7 +255,7 @@ export function CreateGuidelineForm({ onCancel }: CreateGuidelineFormProps) {
                 />
 
                 <Controller
-                  name="version"
+                  name="version_number"
                   control={form.control}
                   render={({ field, fieldState }) => (
                     <Field data-invalid={fieldState.invalid}>
@@ -260,49 +277,26 @@ export function CreateGuidelineForm({ onCancel }: CreateGuidelineFormProps) {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Controller
-                  name="publicationDate"
-                  control={form.control}
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="guideline-publication-date">
-                        Publication date
-                      </FieldLabel>
-                      <Input
-                        {...field}
-                        id="guideline-publication-date"
-                        type="date"
-                        aria-invalid={fieldState.invalid}
-                      />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
-                    </Field>
-                  )}
-                />
-
-                <Controller
-                  name="lastRevision"
-                  control={form.control}
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="guideline-last-revision">
-                        Last revision
-                      </FieldLabel>
-                      <Input
-                        {...field}
-                        id="guideline-last-revision"
-                        type="date"
-                        aria-invalid={fieldState.invalid}
-                      />
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
-                    </Field>
-                  )}
-                />
-              </div>
+              <Controller
+                name="effective_date"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="guideline-effective-date">
+                      Effective date
+                    </FieldLabel>
+                    <Input
+                      {...field}
+                      id="guideline-effective-date"
+                      type="date"
+                      aria-invalid={fieldState.invalid}
+                    />
+                    {fieldState.invalid && (
+                      <FieldError errors={[fieldState.error]} />
+                    )}
+                  </Field>
+                )}
+              />
             </FieldGroup>
           </form>
         </CardContent>

@@ -4,6 +4,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDebounce } from "use-debounce";
 import { AttachedReference, Reference } from "@/lib/references";
+import { NewReferenceInput } from "../references";
 
 async function fetchAttached(guidelineId: string): Promise<AttachedReference[]> {
   const res = await fetch(`/api/guidelines/${guidelineId}/references`);
@@ -55,11 +56,25 @@ export function useReferences(guidelineId: string, query: string) {
     },
   });
 
-  return {
-    attached: attachedQuery.data ?? [],
-    searchResults: searchQuery.data ?? [],
-    isSearching: searchQuery.isFetching,
-    attach: attachMutation.mutate,
-    detach: detachMutation.mutate,
-  };
+  const createMutation = useMutation({
+  mutationFn: (input: NewReferenceInput) =>
+    fetch(`/api/guidelines/${guidelineId}/references`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ newReference: input }), // distinguishes "create new" from "attach existing by id"
+    }).then((res) => res.json()),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ["references", guidelineId] });
+  },
+});
+
+return {
+  attached: attachedQuery.data ?? [],
+  searchResults: searchQuery.data ?? [],
+  isSearching: searchQuery.isFetching,
+  attach: attachMutation.mutate,
+  detach: detachMutation.mutate,
+  createAndAttach: createMutation.mutate,
+  isCreating: createMutation.isPending,
+};
 }
