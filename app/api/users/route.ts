@@ -20,6 +20,7 @@ export async function GET() {
         email: data.user?.email ?? "",
         role: p.role,
         lastActiveAt: data.user?.last_sign_in_at ?? p.created_at,
+        status: data.user?.email_confirmed_at ? "active" : "invited",
       };
     })
   );

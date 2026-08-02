@@ -26,7 +26,7 @@ export function DatePickerField({
 
   return (
     <Popover>
-      <PopoverTrigger asChild>
+      <PopoverTrigger>
         <Button
           type="button"
           variant="outline"
@@ -44,7 +44,6 @@ export function DatePickerField({
           mode="single"
           selected={selectedDate}
           onSelect={(date) => date && onChange(format(date, "yyyy-MM-dd"))}
-          initialFocus
         />
       </PopoverContent>
     </Popover>

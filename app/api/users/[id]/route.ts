@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mockUsers } from "@/lib/mockUserStore";
-import { logAction } from "@/lib/mockAuditLogStore";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { logAction } from "@/lib/auditLogWriter";
+import { cookies } from "next/headers";
 
 export async function PATCH(
   req: NextRequest,
@@ -8,21 +10,43 @@ export async function PATCH(
 ) {
   const { id } = await params;
   const body = await req.json();
-  const user = mockUsers.find((u) => u.id === id);
-  if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-  const previousRole = user.role;
-  if (body.role) user.role = body.role;
+  const supabase = createClient(await cookies());
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
+  const { data: targetProfile, error: fetchError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (fetchError || !targetProfile) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  const previousRole = targetProfile.role;
+
+  const { data: updated, error } = await supabase
+    .from("profiles")
+    .update({ role: body.role })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
   if (body.role && body.role !== previousRole) {
-    logAction({
-      actorEmail: "admin@gmail.com", // TODO: real actor once auth exists
+    const admin = createAdminClient();
+    const { data: authUser } = await admin.auth.admin.getUserById(id);
+    await logAction({
+      actorId: user.id,
       action: `changed role to ${body.role}`,
-      target: user.email,
+      target: authUser.user?.email ?? id,
     });
   }
 
-  return NextResponse.json(user);
+  return NextResponse.json(updated);
 }
 
 export async function DELETE(
@@ -30,14 +54,23 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const index = mockUsers.findIndex((u) => u.id === id);
-  if (index === -1) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-  const [removed] = mockUsers.splice(index, 1);
-  logAction({
-    actorEmail: "admin@gmail.com",
+  const supabase = createClient(await cookies());
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
+  const admin = createAdminClient();
+  const { data: authUser } = await admin.auth.admin.getUserById(id);
+  const targetEmail = authUser.user?.email ?? id;
+
+  // Deletes the auth.users row; the profiles row cascades via its FK
+  const { error } = await admin.auth.admin.deleteUser(id);
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  await logAction({
+    actorId: user.id,
     action: "removed user",
-    target: removed.email,
+    target: targetEmail,
   });
 
   return NextResponse.json({ ok: true });

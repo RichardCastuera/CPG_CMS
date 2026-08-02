@@ -22,18 +22,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { MoreHorizontal, UserCog, Mail, UserX } from "lucide-react";
 import { AppUser, UserRole } from "@/lib/users";
 
 interface UserActionsMenuProps {
   user: AppUser;
   onChangeRole: (id: string, role: UserRole) => void;
   onRemove: (id: string) => void;
+  onResendInvite?: (id: string) => void;
 }
 
 export function UserActionsMenu({
   user,
   onChangeRole,
   onRemove,
+  onResendInvite,
 }: UserActionsMenuProps) {
   const [editOpen, setEditOpen] = useState(false);
   const [role, setRole] = useState<UserRole>(user.role);
@@ -58,19 +61,27 @@ export function UserActionsMenu({
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <button className="text-sm font-medium text-foreground hover:underline">
-              Manage
-            </button>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreHorizontal size={16} />
+            </Button>
           }
         />
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => setEditOpen(true)}>
+            <UserCog size={14} className="mr-2" />
             Change role
           </DropdownMenuItem>
+          {user.status === "invited" && onResendInvite && (
+            <DropdownMenuItem onClick={() => onResendInvite(user.id)}>
+              <Mail size={14} className="mr-2" />
+              Resend invite
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             className="text-destructive focus:text-destructive"
             onClick={handleRemove}
           >
+            <UserX size={14} className="mr-2" />
             Remove user
           </DropdownMenuItem>
         </DropdownMenuContent>

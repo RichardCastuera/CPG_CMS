@@ -35,6 +35,21 @@ export function getUserColumns(handlers: {
       ),
     },
     {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <span
+          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+            row.original.status === "active"
+              ? "bg-emerald-100 text-emerald-800"
+              : "bg-amber-100 text-amber-800"
+          }`}
+        >
+          {row.original.status === "active" ? "Active" : "Invited"}
+        </span>
+      ),
+    },
+    {
       accessorKey: "lastActiveAt",
       header: "Last active",
       cell: ({ row }) => (
@@ -45,7 +60,7 @@ export function getUserColumns(handlers: {
     },
     {
       id: "actions",
-      header: "",
+      header: "Actions",
       cell: ({ row }) => (
         <div className="text-right">
           <UserActionsMenu

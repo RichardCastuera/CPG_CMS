@@ -37,7 +37,7 @@ export function NodeContextMenu({
 }: NodeContextMenuProps) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger>
         <button
           className="rounded p-1 opacity-0 hover:bg-muted group-hover:opacity-100"
           onClick={(e) => e.stopPropagation()} // don't trigger row selection

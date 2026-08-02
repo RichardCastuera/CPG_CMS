@@ -46,7 +46,7 @@ export function ImageInsertPopover({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverTrigger>{children}</PopoverTrigger>
       <PopoverContent className="w-72 p-3" align="start">
         <p className="mb-2 text-sm font-medium text-emerald-700">
           Pick from artifacts

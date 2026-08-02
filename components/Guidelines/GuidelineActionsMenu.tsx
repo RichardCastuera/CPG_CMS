@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +27,12 @@ interface GuidelineActionsMenuProps {
   onForcePublish?: (id: string) => void;
 }
 
+async function fetchMe() {
+  const res = await fetch("/api/me");
+  if (!res.ok) return null;
+  return res.json();
+}
+
 export function GuidelineActionsMenu({
   guideline,
   onArchive,
@@ -33,6 +40,12 @@ export function GuidelineActionsMenu({
   onForcePublish,
 }: GuidelineActionsMenuProps) {
   const router = useRouter();
+
+  const { data: me } = useQuery({
+    queryKey: ["me"],
+    queryFn: fetchMe,
+  });
+  const isAdmin = me?.role === "admin";
 
   function handleDelete() {
     if (confirm(`Delete "${guideline.title}"? This cannot be undone.`)) {
@@ -62,22 +75,27 @@ export function GuidelineActionsMenu({
           <GitBranch size={14} className="mr-2" />
           Versions
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => onForcePublish?.(guideline.id)}>
-          <ShieldCheck size={14} className="mr-2" />
-          Force publish (admin)
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => onArchive?.(guideline.id)}>
-          <Archive size={14} className="mr-2" />
-          Archive
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          className="text-destructive focus:text-destructive"
-          onClick={handleDelete}
-        >
-          <Trash2 size={14} className="mr-2" />
-          Delete
-        </DropdownMenuItem>
+
+        {isAdmin && (
+          <>
+            <DropdownMenuItem onClick={() => onForcePublish?.(guideline.id)}>
+              <ShieldCheck size={14} className="mr-2" />
+              Force publish
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => onArchive?.(guideline.id)}>
+              <Archive size={14} className="mr-2" />
+              Archive
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={handleDelete}
+            >
+              <Trash2 size={14} className="mr-2" />
+              Delete
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

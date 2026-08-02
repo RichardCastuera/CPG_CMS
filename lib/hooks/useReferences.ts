@@ -1,10 +1,10 @@
 // lib/hooks/useReferences.ts
 "use client";
 
+import { AttachedReference, Reference, NewReferenceInput } from "@/lib/references";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDebounce } from "use-debounce";
-import { AttachedReference, Reference } from "@/lib/references";
-import { NewReferenceInput } from "../references";
+
 
 async function fetchAttached(guidelineId: string): Promise<AttachedReference[]> {
   const res = await fetch(`/api/guidelines/${guidelineId}/references`);

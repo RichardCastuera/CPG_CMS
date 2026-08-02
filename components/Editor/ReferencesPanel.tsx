@@ -1,8 +1,12 @@
 "use client";
 
-import { Reference, useState } from "react";
+import { useState } from "react";
 import { X, Plus, Search } from "lucide-react";
-import { AttachedReference, NewReferenceInput } from "@/lib/references";
+import {
+  AttachedReference,
+  Reference,
+  NewReferenceInput,
+} from "@/lib/references";
 import { NewReferenceDialog } from "../Reference/NewReferenceDialog";
 
 interface ReferencesPanelProps {

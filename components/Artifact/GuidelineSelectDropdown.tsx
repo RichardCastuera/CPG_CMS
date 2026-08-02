@@ -33,7 +33,7 @@ export function GuidelineSelectDropdown({
   return (
     <Select
       value={value ?? "all"}
-      onValueChange={(v) => onChange(v === "all" ? undefined : v)}
+      onValueChange={(v) => onChange(v === "all" || v === null ? undefined : v)}
     >
       <SelectTrigger className="w-72">
         <SelectValue placeholder="Select Guideline" />

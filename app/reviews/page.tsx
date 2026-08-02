@@ -1,5 +1,3 @@
-import { NewGuidelineButton } from "@/components/NewGuidelineButton";
-
 const Reviews = () => {
   return (
     <div className="space-y-6 p-6">

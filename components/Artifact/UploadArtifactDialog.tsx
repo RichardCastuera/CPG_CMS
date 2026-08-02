@@ -102,7 +102,10 @@ export function UploadArtifactDialog({
             <label className="text-sm font-medium">
               Guideline <span className="text-destructive">*</span>
             </label>
-            <Select value={guidelineId} onValueChange={setGuidelineId}>
+            <Select
+              value={guidelineId}
+              onValueChange={(v) => setGuidelineId(v ?? "")}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a guideline" />
               </SelectTrigger>

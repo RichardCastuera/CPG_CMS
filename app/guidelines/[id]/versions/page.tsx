@@ -9,9 +9,6 @@ import {
   GitCompare,
   Plus,
   FileText,
-  Eye,
-  Copy,
-  Download,
   MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,6 +25,7 @@ import {
 } from "@/components/ui/tooltip";
 import { VersionFormDialog } from "@/components/VersionFormDialog";
 import { GuidelineWithVersions, VersionStatus } from "@/constants";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 async function fetchGuidelineInfo(
   guidelineId: string,
@@ -82,6 +80,11 @@ export default function GuidelineVersionsPage({
   const router = useRouter();
   const [dialogState, setDialogState] = useState<DialogState>({ open: false });
   const [dialogError, setDialogError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    number: string;
+  } | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const { data: guideline, isLoading } = useQuery({
     queryKey: ["guideline-info", guidelineId],
@@ -156,15 +159,24 @@ export default function GuidelineVersionsPage({
     },
   });
 
-  function handleDelete(versionId: string, versionNumber: string) {
-    if (confirm(`Delete version ${versionNumber}? This cannot be undone.`)) {
-      deleteMutation.mutate(versionId, {
-        onError: (err: any) =>
-          alert(err?.message ?? "Failed to delete version"),
-      });
+  function friendlyDeleteError(raw: string): string {
+    if (raw.includes("Cannot delete the active version")) {
+      return "This version is currently active and can't be deleted. Mark another version as active first, then try again.";
     }
+    return raw;
   }
 
+  function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleteError(null);
+    deleteMutation.mutate(deleteTarget.id, {
+      onSuccess: () => setDeleteTarget(null),
+      onError: (err: any) =>
+        setDeleteError(
+          friendlyDeleteError(err?.message ?? "Failed to delete version"),
+        ),
+    });
+  }
   function friendlyVersionError(raw: string): string {
     if (raw.includes("guideline_versions_guideline_id_version_number_key")) {
       return "A version with that number already exists. Try a different one.";
@@ -232,10 +244,6 @@ export default function GuidelineVersionsPage({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2">
-            <GitCompare size={16} />
-            Compare versions
-          </Button>
           <Button
             className="gap-2 bg-[#2F6B4F] hover:bg-[#2F6B4F]/90"
             onClick={() => setDialogState({ open: true, mode: "create" })}
@@ -325,18 +333,6 @@ export default function GuidelineVersionsPage({
                     <FileText size={14} />
                     Open
                   </Link>
-                  <button className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
-                    <Eye size={14} />
-                    Preview
-                  </button>
-                  <button className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
-                    <Copy size={14} />
-                    Duplicate as new
-                  </button>
-                  <button className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
-                    <Download size={14} />
-                    Export
-                  </button>
                   <DropdownMenu>
                     <DropdownMenuTrigger
                       render={
@@ -397,7 +393,10 @@ export default function GuidelineVersionsPage({
                         <DropdownMenuItem
                           className="text-destructive focus:text-destructive"
                           onClick={() =>
-                            handleDelete(version.id, version.version_number)
+                            setDeleteTarget({
+                              id: version.id,
+                              number: version.version_number,
+                            })
                           }
                         >
                           Delete version
@@ -433,6 +432,23 @@ export default function GuidelineVersionsPage({
         }
         errorMessage={dialogError}
         onSubmit={handleDialogSubmit}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+            setDeleteError(null);
+          }
+        }}
+        title="Delete version"
+        description={`Delete version ${deleteTarget?.number}? This cannot be undone.`}
+        confirmLabel="Delete"
+        destructive
+        isConfirming={deleteMutation.isPending}
+        errorMessage={deleteError}
+        onConfirm={confirmDelete}
       />
     </div>
   );

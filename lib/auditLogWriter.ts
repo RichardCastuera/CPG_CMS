@@ -1,6 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 
+export interface AuditLogEntry {
+  id: string;
+  created_at: string;
+  actor_id: string | null;
+  action: string;
+  target: string;
+  guideline_id: string | null;
+  profiles?: { name: string } | null;
+  actorEmail?: string | null;
+}
+
 interface LogActionParams {
   actorId: string;
   action: string;
@@ -23,7 +34,6 @@ export async function logAction({
   });
 
   if (error) {
-    // Don't throw — a failed audit log write shouldn't fail the parent action
     console.error("[logAction] failed to write audit log entry:", error.message);
   }
 }
