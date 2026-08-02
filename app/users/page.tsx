@@ -98,7 +98,12 @@ export default function UsersPage() {
             Loading...
           </p>
         ) : (
-          <DataTable columns={columns} data={users ?? []} />
+          <DataTable
+            columns={columns}
+            data={users ?? []}
+            searchColumn="name"
+            searchPlaceholder="Search users..."
+          />
         )}
       </Card>
 

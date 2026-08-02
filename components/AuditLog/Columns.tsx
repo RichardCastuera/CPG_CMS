@@ -1,7 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { AuditLogEntry } from "@/lib/auditLog";
+import { AuditLogEntry } from "@/lib/auditLogWriter";
 
 function formatTimestamp(iso: string): string {
   return new Date(iso).toISOString().slice(0, 16).replace("T", " ");

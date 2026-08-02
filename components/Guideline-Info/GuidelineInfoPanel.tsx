@@ -8,6 +8,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { CheckCircle2 } from "lucide-react";
 import { TagInput } from "./TagInput";
 import { AuthorsList } from "./AuthorsList";
 import { DatePickerField } from "./DatePickerField";
@@ -22,6 +24,9 @@ interface GuidelineInfoPanelProps {
   info: GuidelineWithVersions;
   onChange: (field: keyof GuidelineWithVersions, value: any) => void;
   onVersionChange: (versionId: string, field: string, value: any) => void;
+  onApproveVersion: (versionId: string) => void;
+  isApproving?: boolean;
+  editingVersionId: string;
 }
 
 const STATUS_LABELS: Record<GuidelineStatus, string> = {
@@ -38,12 +43,30 @@ const STATUS_BADGE_STYLES: Record<GuidelineStatus, string> = {
   archived: "bg-slate-100 text-slate-500",
 };
 
+const VERSION_STATUS_LABELS: Record<VersionStatus, string> = {
+  draft: "Draft",
+  in_review: "In review",
+  published: "Published",
+  superseded: "Superseded",
+};
+
+const VERSION_STATUS_BADGE_STYLES: Record<VersionStatus, string> = {
+  draft: "bg-gray-100 text-gray-700",
+  in_review: "bg-amber-100 text-amber-700",
+  published: "bg-emerald-100 text-emerald-700",
+  superseded: "bg-slate-100 text-slate-500",
+};
+
 export function GuidelineInfoPanel({
   info,
   onChange,
   onVersionChange,
+  onApproveVersion,
+  isApproving = false,
+  editingVersionId,
 }: GuidelineInfoPanelProps) {
   const currentVersion =
+    info.versions.find((v) => v.id === editingVersionId) ??
     info.versions.find((v) => v.id === info.current_version_id) ??
     info.versions[0];
 
@@ -85,26 +108,11 @@ export function GuidelineInfoPanel({
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Status</label>
-            <div className="flex items-center gap-2">
-              <Select
-                value={info.status}
-                onValueChange={(v) => onChange("status", v as GuidelineStatus)}
-              >
-                <SelectTrigger className="flex-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(STATUS_LABELS) as GuidelineStatus[]).map(
-                    (s) => (
-                      <SelectItem key={s} value={s}>
-                        {STATUS_LABELS[s]}
-                      </SelectItem>
-                    ),
-                  )}
-                </SelectContent>
-              </Select>
+            {/* Read-only: status transitions happen through submit-or-publish
+                and approve-version actions, not free-form editing here. */}
+            <div className="flex h-9 items-center">
               <span
-                className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_BADGE_STYLES[info.status]}`}
+                className={`rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_BADGE_STYLES[info.status]}`}
               >
                 {STATUS_LABELS[info.status]}
               </span>
@@ -137,12 +145,29 @@ export function GuidelineInfoPanel({
 
       {currentVersion && (
         <div className="space-y-4 rounded-md border p-4">
-          <div>
-            <h3 className="text-sm font-semibold">Current version</h3>
-            <p className="text-xs text-muted-foreground">
-              Editing {currentVersion.version_number}. Older versions are
-              read-only here.
-            </p>
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-sm font-semibold">
+                {currentVersion.id === info.current_version_id
+                  ? "Current version"
+                  : "Editing version"}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Editing {currentVersion.version_number}. Older versions are
+                read-only here.
+              </p>
+            </div>
+            {currentVersion.status === "in_review" && (
+              <Button
+                size="sm"
+                className="gap-1.5 bg-[#2F6B4F] hover:bg-[#2F6B4F]/90"
+                disabled={isApproving}
+                onClick={() => onApproveVersion(currentVersion.id)}
+              >
+                <CheckCircle2 size={14} />
+                {isApproving ? "Approving..." : "Approve version"}
+              </Button>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -165,26 +190,15 @@ export function GuidelineInfoPanel({
               <label className="mb-1 block text-sm font-medium">
                 Version status
               </label>
-              <Select
-                value={currentVersion.status}
-                onValueChange={(v) =>
-                  onVersionChange(
-                    currentVersion.id,
-                    "status",
-                    v as VersionStatus,
-                  )
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="in_review">In review</SelectItem>
-                  <SelectItem value="published">Published</SelectItem>
-                  <SelectItem value="superseded">Superseded</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Read-only: use "Approve version" above, or submit-or-publish
+                  from the editor toolbar, to change this. */}
+              <div className="flex h-9 items-center">
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${VERSION_STATUS_BADGE_STYLES[currentVersion.status]}`}
+                >
+                  {VERSION_STATUS_LABELS[currentVersion.status]}
+                </span>
+              </div>
             </div>
           </div>
 

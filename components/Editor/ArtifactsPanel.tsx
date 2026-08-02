@@ -4,16 +4,31 @@ import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { UploadCloud, Loader2, FileText, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Artifact } from "@/lib/artifacts";
+import { Artifact, ArtifactCategory } from "@/lib/artifacts";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface ArtifactsPanelProps {
   artifacts: Artifact[];
   isLoading: boolean;
   isUploading: boolean;
-  upload: (file: File) => void;
+  upload: (args: { file: File; category: ArtifactCategory }) => void;
   updateCaption: (args: { id: string; caption: string }) => void;
   remove: (id: string) => void;
 }
+
+const CATEGORY_LABELS: Record<ArtifactCategory, string> = {
+  figure: "Figure",
+  table: "Table",
+  flowchart: "Flowchart",
+  chart: "Chart",
+  pdf: "PDF",
+};
 
 export function ArtifactsPanel({
   artifacts,
@@ -23,11 +38,13 @@ export function ArtifactsPanel({
   updateCaption,
   remove,
 }: ArtifactsPanelProps) {
+  const [category, setCategory] = useState<ArtifactCategory>("figure");
+
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
-      acceptedFiles.forEach((file) => upload(file));
+      acceptedFiles.forEach((file) => upload({ file, category }));
     },
-    [upload],
+    [upload, category],
   );
 
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
@@ -37,12 +54,34 @@ export function ArtifactsPanel({
       "image/jpeg": [".jpg", ".jpeg"],
       "image/svg+xml": [".svg"],
       "text/csv": [".csv"],
+      "application/pdf": [".pdf"],
     },
     noClick: true,
   });
 
   return (
     <div className="space-y-3 p-3">
+      <div>
+        <label className="mb-1 block text-xs font-medium text-muted-foreground">
+          Category for next upload
+        </label>
+        <Select
+          value={category}
+          onValueChange={(v) => setCategory(v as ArtifactCategory)}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(Object.keys(CATEGORY_LABELS) as ArtifactCategory[]).map((c) => (
+              <SelectItem key={c} value={c}>
+                {CATEGORY_LABELS[c]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div
         {...getRootProps()}
         className={cn(
@@ -61,7 +100,9 @@ export function ArtifactsPanel({
             Drop a figure or table here
           </span>
           <br />
-          <span className="text-muted-foreground">PNG, JPG, SVG, or CSV</span>
+          <span className="text-muted-foreground">
+            PNG, JPG, SVG, PDF, or CSV
+          </span>
         </p>
         <button
           type="button"
@@ -107,9 +148,14 @@ function ArtifactRow({
     <div className="flex items-start gap-2 rounded-md border bg-muted/30 p-2">
       <FileText size={16} className="mt-0.5 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-emerald-700">
-          {artifact.name}
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="truncate text-sm font-medium text-emerald-700">
+            {artifact.name}
+          </p>
+          <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+            {CATEGORY_LABELS[artifact.category ?? "figure"]}
+          </span>
+        </div>
         <input
           value={caption}
           onChange={(e) => setCaption(e.target.value)}

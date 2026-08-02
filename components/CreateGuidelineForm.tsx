@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const formSchema = z.object({
   title: z
@@ -30,7 +30,7 @@ const formSchema = z.object({
     .min(5, "Title must be at least 5 characters.")
     .max(160, "Title must be at most 160 characters."),
   guideline_type: z.enum(["Compendium", "Interim"]),
-  status: z.enum(["draft", "in_review", "published", "archived"]),
+  status: z.enum(["draft", "in_review", "published", "archived"]).optional(),
   publishingSocieties: z.string().min(1, "Enter at least one society."),
   specialtyTags: z.string().min(1, "Enter at least one topic."),
   version_number: z.string().min(1, "Enter a version number, e.g. v1.0."),
@@ -51,12 +51,16 @@ interface CreateGuidelineFormProps {
 }
 
 export function CreateGuidelineForm({ onCancel }: CreateGuidelineFormProps) {
+  const searchParams = useSearchParams();
+  const mode = searchParams.get("mode") === "import" ? "import" : "new";
+  const isImport = mode === "import";
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       guideline_type: undefined,
-      status: undefined,
+      status: isImport ? undefined : "draft",
       publishingSocieties: "",
       specialtyTags: "",
       version_number: "",
@@ -76,7 +80,10 @@ export function CreateGuidelineForm({ onCancel }: CreateGuidelineFormProps) {
     const payload = {
       title: data.title,
       guideline_type: data.guideline_type,
-      status: data.status,
+      // "new" guidelines always start as draft, regardless of what's in
+      // form state — the server also enforces this independently.
+      status: isImport ? data.status : "draft",
+      source: isImport ? "imported" : "authored",
       societies: data.publishingSocieties
         .split(",")
         .map((s) => s.trim())
@@ -86,9 +93,6 @@ export function CreateGuidelineForm({ onCancel }: CreateGuidelineFormProps) {
         .map((s) => s.trim())
         .filter(Boolean),
       authors: data.authors,
-      // Hidden from the UI for now, but part of the real schema — sent as null
-      // so the record is complete and these fields can be surfaced later
-      // without a data migration.
       short_title: null,
       doi: null,
       next_review_date: null,
@@ -116,9 +120,13 @@ export function CreateGuidelineForm({ onCancel }: CreateGuidelineFormProps) {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Guideline details</CardTitle>
+          <CardTitle>
+            {isImport ? "Import existing guideline" : "Guideline details"}
+          </CardTitle>
           <CardDescription>
-            Core metadata for this clinical practice guideline.
+            {isImport
+              ? "Bring in a guideline already published outside this system."
+              : "Core metadata for this clinical practice guideline."}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -223,36 +231,47 @@ export function CreateGuidelineForm({ onCancel }: CreateGuidelineFormProps) {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <Controller
-                  name="status"
-                  control={form.control}
-                  render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor="guideline-status">Status</FieldLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <SelectTrigger
-                          id="guideline-status"
-                          className="w-full"
-                          aria-invalid={fieldState.invalid}
+                {isImport ? (
+                  <Controller
+                    name="status"
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor="guideline-status">
+                          Status
+                        </FieldLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
                         >
-                          <SelectValue placeholder="Select status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="draft">Draft</SelectItem>
-                          <SelectItem value="in_review">In review</SelectItem>
-                          <SelectItem value="published">Published</SelectItem>
-                          <SelectItem value="archived">Archived</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {fieldState.invalid && (
-                        <FieldError errors={[fieldState.error]} />
-                      )}
-                    </Field>
-                  )}
-                />
+                          <SelectTrigger
+                            id="guideline-status"
+                            className="w-full"
+                            aria-invalid={fieldState.invalid}
+                          >
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="draft">Draft</SelectItem>
+                            <SelectItem value="in_review">In review</SelectItem>
+                            <SelectItem value="published">Published</SelectItem>
+                            <SelectItem value="archived">Archived</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {fieldState.invalid && (
+                          <FieldError errors={[fieldState.error]} />
+                        )}
+                      </Field>
+                    )}
+                  />
+                ) : (
+                  <div className="flex flex-col justify-end">
+                    <span className="text-xs text-muted-foreground">
+                      New guidelines start as <strong>Draft</strong> and move
+                      through review from the editor.
+                    </span>
+                  </div>
+                )}
 
                 <Controller
                   name="version_number"

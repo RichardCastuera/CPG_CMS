@@ -7,13 +7,20 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const body = await req.json(); // { sourceVersionId: string, versionNumber: string }
   const supabase = createClient(await cookies());
 
-  const { error } = await supabase.rpc("submit_or_publish_guideline", { g_id: id });
+  const { data: newVersionId, error } = await supabase.rpc(
+    "duplicate_guideline_version",
+    {
+      p_source_version_id: body.sourceVersionId,
+      p_new_version_number: body.versionNumber,
+    }
+  );
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ id: newVersionId });
 }

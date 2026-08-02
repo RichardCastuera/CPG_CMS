@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { CreateGuidelineForm } from "@/components/CreateGuidelineForm";
 
 const NewGuideline = () => {
@@ -11,7 +12,13 @@ const NewGuideline = () => {
         </p>
       </header>
       <main>
-        <CreateGuidelineForm />
+        <Suspense
+          fallback={
+            <p className="text-sm text-muted-foreground">Loading form...</p>
+          }
+        >
+          <CreateGuidelineForm />
+        </Suspense>
       </main>
     </div>
   );

@@ -1,13 +1,14 @@
-import { nanoid } from "nanoid";
+import { JSONContent } from "@tiptap/react";
 
 export type NodeStatus = "draft" | "complete" | "needs-review";
 
-export interface RecommendationNode {
+export interface SectionNode {
   id: string;
-  type: "recommendation";
+  type: "section";
   title: string;
-  number: string;
   status: NodeStatus;
+  overview?: JSONContent;
+  children: QuestionNode[];
 }
 
 export interface QuestionNode {
@@ -15,15 +16,22 @@ export interface QuestionNode {
   type: "question";
   title: string;
   status: NodeStatus;
+  clinicalQuestion?: string;
+  background?: JSONContent;
   children: RecommendationNode[];
 }
 
-export interface SectionNode {
+export interface RecommendationNode {
   id: string;
-  type: "section";
+  type: "recommendation";
   title: string;
+  number: string;
   status: NodeStatus;
-  children: QuestionNode[];
+  strength?: string;
+  certaintyOfEvidence?: string;
+  statement?: JSONContent;
+  comment?: JSONContent;
+  evidenceSummary?: JSONContent;
 }
 
 export type AnyNode = SectionNode | QuestionNode | RecommendationNode;
@@ -86,7 +94,7 @@ export function addChild(tree: GuidelineTree, parentId: string): GuidelineTree {
 
   if (parentId === "root") {
     newTree.sections.push({
-      id: nanoid(),
+      id: crypto.randomUUID(),
       type: "section",
       title: "New section",
       status: "draft",
@@ -100,7 +108,7 @@ export function addChild(tree: GuidelineTree, parentId: string): GuidelineTree {
 
   if (loc.node.type === "section") {
     loc.node.children.push({
-      id: nanoid(),
+      id: crypto.randomUUID(),
       type: "question",
       title: "New question",
       status: "draft",
@@ -108,7 +116,7 @@ export function addChild(tree: GuidelineTree, parentId: string): GuidelineTree {
     });
   } else if (loc.node.type === "question") {
     loc.node.children.push({
-      id: nanoid(),
+      id: crypto.randomUUID(),
       type: "recommendation",
       title: "New recommendation",
       number: "",
@@ -145,7 +153,7 @@ export function duplicateNode(tree: GuidelineTree, id: string): GuidelineTree {
 
 function deepCloneWithNewIds(node: AnyNode): AnyNode {
   const cloned = structuredClone(node);
-  cloned.id = nanoid();
+  cloned.id = crypto.randomUUID();
   cloned.title = `${cloned.title} (copy)`;
   if (cloned.type === "section" || cloned.type === "question") {
     cloned.children = cloned.children.map((child) => deepCloneWithNewIds(child) as never);
@@ -178,48 +186,18 @@ export function moveAdjacent(tree: GuidelineTree, id: string, direction: "up" | 
   return newTree;
 }
 
+// --- Update a single field on a node (supports both plain strings and
+// TipTap rich-text JSON content, e.g. overview/background/statement/comment) ---
 
-export interface SectionNode {
-  id: string;
-  type: "section";
-  title: string;
-  status: NodeStatus;
-  overview?: JSONContent;
-  children: QuestionNode[];
-}
-
-export interface QuestionNode {
-  id: string;
-  type: "question";
-  title: string;
-  status: NodeStatus;
-  clinicalQuestion?: string;
-  background?: JSONContent;
-  children: RecommendationNode[];
-}
-
-export interface RecommendationNode {
-  id: string;
-  type: "recommendation";
-  title: string;
-  number: string;
-  status: NodeStatus;
-  strength?: string;
-  certaintyOfEvidence?: string;
-  statement?: JSONContent;
-  comment?: JSONContent;
-  evidenceSummary?: JSONContent;
-}
-
-export function updateNodeField<T extends AnyNode>(
+export function updateNodeField(
   tree: GuidelineTree,
   id: string,
   field: string,
-  value: string
+  value: string | JSONContent
 ): GuidelineTree {
   const newTree: GuidelineTree = structuredClone(tree);
   const loc = findNodeLocation(newTree, id);
   if (!loc) return tree;
-  (loc.node as never)[field] = value;
+  (loc.node as any)[field] = value;
   return newTree;
 }

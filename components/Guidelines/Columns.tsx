@@ -25,6 +25,7 @@ const statusLabels: Record<VersionStatus, string> = {
 function hasParallelVersions(
   versions: GuidelineWithVersions["versions"],
 ): boolean {
+  if (!Array.isArray(versions)) return false;
   const seen = new Set<string>();
   for (const v of versions) {
     if (seen.has(v.version_number)) return true;
@@ -54,6 +55,7 @@ function timeAgo(dateString: string): string {
 interface GetColumnsHandlers {
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
+  onForcePublish: (id: string) => void;
 }
 
 export function getColumns(
@@ -147,6 +149,7 @@ export function getColumns(
             guideline={guideline}
             onArchive={handlers.onArchive}
             onDelete={handlers.onDelete}
+            onForcePublish={handlers.onForcePublish}
           />
         );
       },

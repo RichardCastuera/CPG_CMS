@@ -5,9 +5,9 @@ import { logAction } from "@/lib/auditLogWriter";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string; versionId: string }> }
 ) {
-  const { id } = await params;
+  const { id, versionId } = await params;
   const supabase = createClient(await cookies());
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -17,21 +17,18 @@ export async function POST(
 
   const { data: guideline, error } = await supabase
     .from("guidelines")
-    .update({ status: "archived", updated_at: new Date().toISOString() })
+    .update({ current_version_id: versionId })
     .eq("id", id)
     .select("title")
     .single();
 
   if (error) {
-    // Most likely cause: the guard trigger rejecting a non-admin's status
-    // change ("Status changes must go through submit_or_publish_guideline,
-    // admin_force_publish, or approve_guideline_version").
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
   await logAction({
     actorId: user.id,
-    action: "archived",
+    action: "marked version as active",
     target: guideline.title,
     guidelineId: id,
   });

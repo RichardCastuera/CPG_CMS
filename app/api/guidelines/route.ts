@@ -1,55 +1,79 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mockGuidelines } from "@/lib/mockGuidelineStore";
-import { GuidelineWithVersions } from "@/constants";
-import { logAction } from "@/lib/mockAuditLogStore";
+import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
+import { logAction } from "@/lib/auditLogWriter";
 
 export async function GET() {
-  return NextResponse.json(Object.values(mockGuidelines));
+  const supabase = createClient(await cookies());
+  const { data: guidelines, error } = await supabase
+    .from("guidelines")
+    .select("*, versions:guideline_versions!guideline_versions_guideline_id_fkey(*)");
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  return NextResponse.json(guidelines);
 }
 
 export async function POST(req: NextRequest) {
+  const supabase = createClient(await cookies());
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
   const body = await req.json();
-  const id = crypto.randomUUID();
-  const versionId = crypto.randomUUID();
-  const now = new Date().toISOString();
+  const { version_number, effective_date, source, ...guidelineFields } = body;
 
-  const guideline: GuidelineWithVersions = {
-    id,
-    title: body.title,
-    short_title: body.short_title ?? null,
-    guideline_type: body.guideline_type,
-    specialty_tags: body.specialty_tags ?? [],
-    societies: body.societies ?? [],
-    authors: body.authors ?? [],
-    doi: body.doi ?? null,
-    status: body.status,
-    current_version_id: versionId,
-    next_review_date: body.next_review_date ?? null,
-    created_at: now,
-    updated_at: now,
-    versions: [
-      {
-        id: versionId,
-        guideline_id: id,
-        version_number: body.version_number,
-        status: mapGuidelineStatusToVersionStatus(body.status),
-        changelog: null,
-        effective_date: body.effective_date ?? null,
-        source_pdf_url: null,
-        created_by: null,
-        created_at: now,
-        published_at: body.status === "published" ? now : null,
-      },
-    ],
-  };
+  // Server-side enforcement, not just a hidden form field: an "authored"
+  // guideline can only ever start as draft, regardless of what's sent.
+  const resolvedStatus = source === "imported" ? guidelineFields.status : "draft";
 
-  mockGuidelines[id] = guideline;
-  logAction({
-  actorEmail: "admin@gmail.com",
-  action: "created guideline",
-  target: guideline.title,
-});
-return NextResponse.json({ id });
+  const { data: guideline, error: guidelineError } = await supabase
+    .from("guidelines")
+    .insert({
+      ...guidelineFields,
+      status: resolvedStatus,
+      source: source ?? "authored",
+      created_by: user.id,
+    })
+    .select()
+    .single();
+
+  if (guidelineError) {
+    return NextResponse.json({ error: guidelineError.message }, { status: 400 });
+  }
+
+  const { data: version, error: versionError } = await supabase
+    .from("guideline_versions")
+    .insert({
+      guideline_id: guideline.id,
+      version_number,
+      effective_date: effective_date || null,
+      status: mapGuidelineStatusToVersionStatus(resolvedStatus),
+      created_by: user.id,
+    })
+    .select()
+    .single();
+
+  if (versionError) {
+    await supabase.from("guidelines").delete().eq("id", guideline.id);
+    return NextResponse.json({ error: versionError.message }, { status: 400 });
+  }
+
+  const { error: linkError } = await supabase
+    .from("guidelines")
+    .update({ current_version_id: version.id })
+    .eq("id", guideline.id);
+
+  if (linkError) {
+    return NextResponse.json({ error: linkError.message }, { status: 400 });
+  }
+
+  await logAction({
+    actorId: user.id,
+    action: source === "imported" ? "imported guideline" : "created guideline",
+    target: guideline.title,
+    guidelineId: guideline.id,
+  });
+
+  return NextResponse.json({ id: guideline.id });
 }
 
 function mapGuidelineStatusToVersionStatus(

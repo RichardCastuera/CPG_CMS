@@ -30,7 +30,7 @@ export function GuidelineActionsMenu({
   guideline,
   onArchive,
   onDelete,
-  onViewVersions,
+  onForcePublish,
 }: GuidelineActionsMenuProps) {
   const router = useRouter();
 
@@ -42,11 +42,13 @@ export function GuidelineActionsMenu({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
-          <MoreHorizontal size={16} />
-        </Button>
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="ghost" size="icon" className="h-8 w-8">
+            <MoreHorizontal size={16} />
+          </Button>
+        }
+      />
       <DropdownMenuContent align="end">
         <DropdownMenuItem
           onClick={() => router.push(`/guidelines/${guideline.id}`)}

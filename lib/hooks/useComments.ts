@@ -10,7 +10,7 @@ async function fetchComments(guidelineId: string, nodeId: string): Promise<Comme
   return res.json();
 }
 
-export function useComments(guidelineId: string, nodeId: string) {
+export function useComments(guidelineId: string, nodeId: string, nodeType: "section" | "question" | "recommendation") {
   const queryClient = useQueryClient();
 
   const query = useQuery({
@@ -24,7 +24,7 @@ export function useComments(guidelineId: string, nodeId: string) {
       fetch(`/api/guidelines/${guidelineId}/nodes/${nodeId}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body }),
+        body: JSON.stringify({ body, nodeType }),
       }).then((res) => res.json()),
     onSuccess: (newComment) => {
       queryClient.setQueryData<Comment[]>(["comments", guidelineId, nodeId], (prev) => [

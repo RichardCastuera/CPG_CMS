@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Artifact } from "@/lib/artifacts";
+import { Artifact, ArtifactCategory } from "@/lib/artifacts";
 
 async function fetchArtifacts(guidelineId: string): Promise<Artifact[]> {
   const res = await fetch(`/api/guidelines/${guidelineId}/artifacts`);
@@ -9,9 +9,14 @@ async function fetchArtifacts(guidelineId: string): Promise<Artifact[]> {
   return res.json();
 }
 
-async function uploadArtifact(guidelineId: string, file: File): Promise<Artifact> {
+async function uploadArtifact(
+  guidelineId: string,
+  file: File,
+  category: ArtifactCategory,
+): Promise<Artifact> {
   const formData = new FormData();
   formData.append("file", file);
+  formData.append("category", category);
   const res = await fetch(`/api/guidelines/${guidelineId}/artifacts`, {
     method: "POST",
     body: formData,
@@ -29,13 +34,14 @@ export function useArtifacts(guidelineId: string) {
   });
 
   const uploadMutation = useMutation({
-    mutationFn: (file: File) => uploadArtifact(guidelineId, file),
-    onSuccess: (newArtifact) => {
-      queryClient.setQueryData<Artifact[]>(["artifacts", guidelineId], (prev) => [
-        ...(prev ?? []),
-        newArtifact,
-      ]);
-    },
+  mutationFn: ({ file, category }: { file: File; category: ArtifactCategory }) =>
+    uploadArtifact(guidelineId, file, category),
+  onSuccess: (newArtifact) => {
+    queryClient.setQueryData<Artifact[]>(["artifacts", guidelineId], (prev) => [
+      ...(prev ?? []),
+      newArtifact,
+    ]);
+  },
   });
 
   const captionMutation = useMutation({

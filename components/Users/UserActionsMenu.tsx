@@ -56,11 +56,13 @@ export function UserActionsMenu({
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="text-sm font-medium text-foreground hover:underline">
-            Manage
-          </button>
-        </DropdownMenuTrigger>
+        <DropdownMenuTrigger
+          render={
+            <button className="text-sm font-medium text-foreground hover:underline">
+              Manage
+            </button>
+          }
+        />
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => setEditOpen(true)}>
             Change role

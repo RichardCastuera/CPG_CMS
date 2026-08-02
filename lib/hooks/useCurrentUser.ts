@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "../supabase/client";
 
-interface CurrentUser {
+
+export interface CurrentUser {
   id: string;
   email: string;
   name: string;
@@ -13,9 +14,10 @@ interface CurrentUser {
 export function useCurrentUser() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
+    const supabase = createClient();
+
     async function load() {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) {
@@ -38,7 +40,12 @@ export function useCurrentUser() {
       });
       setLoading(false);
     }
+
     load();
+
+    // Keep this in sync if the session changes (sign out in another tab, token refresh, etc.)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => load());
+    return () => subscription.unsubscribe();
   }, []);
 
   return { user, loading };

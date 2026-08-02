@@ -1,42 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
-import { logAction } from "@/lib/auditLogWriter";
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string; versionId: string }> }
+) {
+  const { versionId } = await params;
+  const body = await req.json(); // { version_number: string }
+  const supabase = createClient(await cookies());
+
+  const { data, error } = await supabase
+    .from("guideline_versions")
+    .update({ version_number: body.version_number })
+    .eq("id", versionId)
+    .select()
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  return NextResponse.json(data);
+}
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ versionId: string }> }
 ) {
-  const { id } = await params;
+  const { versionId } = await params;
   const supabase = createClient(await cookies());
-  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
+  const { error } = await supabase.rpc("delete_guideline_version", {
+    p_version_id: versionId,
+  });
 
-  const { data: guideline, error: fetchError } = await supabase
-    .from("guidelines")
-    .select("title")
-    .eq("id", id)
-    .single();
-
-  const { error: deleteError } = await supabase
-    .from("guidelines")
-    .delete()
-    .eq("id", id);
-
-  if (deleteError) {
-    return NextResponse.json({ error: deleteError.message }, { status: 400 });
-  }
-
-  if (guideline?.title) {
-    await logAction({
-      actorId: user.id,
-      action: "deleted guideline",
-      target: guideline.title,
-      guidelineId: id,
-    });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
   return NextResponse.json({ ok: true });

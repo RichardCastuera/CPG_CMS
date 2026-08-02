@@ -4,12 +4,14 @@ import { cookies } from "next/headers";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string; versionId: string }> }
 ) {
-  const { id } = await params;
+  const { versionId } = await params;
   const supabase = createClient(await cookies());
 
-  const { error } = await supabase.rpc("admin_force_publish", { g_id: id });
+  const { error } = await supabase.rpc("approve_guideline_version", {
+    version_id: versionId,
+  });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });

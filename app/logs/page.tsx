@@ -5,7 +5,7 @@ import { History } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { DataTable } from "@/components/Guidelines/DataTable";
 import { auditLogColumns } from "@/components/AuditLog/Columns";
-import { AuditLogEntry } from "@/lib/auditlog";
+import { AuditLogEntry } from "@/lib/auditLogWriter";
 
 async function fetchAuditLog(): Promise<AuditLogEntry[]> {
   const res = await fetch("/api/audit-log");

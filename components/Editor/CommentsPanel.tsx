@@ -103,6 +103,13 @@ export function CommentsPanel({
   );
 }
 
+function initials(name: string | null | undefined): string {
+  if (!name) return "?";
+  const parts = name.trim().split(" ");
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 function CommentRow({
   comment,
   onToggleResolved,
@@ -115,13 +122,15 @@ function CommentRow({
   return (
     <div className="group flex gap-2 rounded-md border bg-muted/20 p-2">
       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2F6B4F] text-xs font-medium text-white">
-        {comment.authorInitials}
+        {initials(comment.profiles?.name)}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-medium">{comment.authorName}</p>
+          <p className="text-sm font-medium">
+            {comment.profiles?.name ?? "Unknown"}
+          </p>
           <span className="text-[11px] text-muted-foreground">
-            {formatRelativeTime(comment.createdAt)}
+            {formatRelativeTime(comment.created_at)}
           </span>
         </div>
         <p

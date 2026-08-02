@@ -1,6 +1,6 @@
 "use client";
 
-import { AnyNode, findNodeLocation, GuidelineTree } from "@/lib/guidelineTree";
+import { findNodeLocation, GuidelineTree } from "@/lib/guidelineTree";
 import { RichTextEditor } from "./RichTextEditor";
 import { RecommendationMetaFields } from "./RecommendationsMetaFields";
 import { Card } from "../ui/card";
@@ -14,12 +14,14 @@ interface NodeEditorPanelProps {
     field: string,
     value: string | JSONContent,
   ) => void;
+  guidelineId: string;
 }
 
 export function NodeEditorPanel({
   tree,
   activeNodeId,
   onFieldChange,
+  guidelineId,
 }: NodeEditorPanelProps) {
   if (!activeNodeId) {
     return (
@@ -52,6 +54,7 @@ export function NodeEditorPanel({
             <RichTextEditor
               content={node.overview ?? null}
               onChange={(json) => onFieldChange(node.id, "overview", json)}
+              guidelineId={guidelineId}
             />
           </div>
         </Card>
@@ -80,6 +83,7 @@ export function NodeEditorPanel({
             <RichTextEditor
               content={node.background ?? null}
               onChange={(json) => onFieldChange(node.id, "background", json)}
+              guidelineId={guidelineId}
             />
           </div>
         </Card>
@@ -128,6 +132,7 @@ export function NodeEditorPanel({
           <RichTextEditor
             content={node.statement ?? null}
             onChange={(json) => onFieldChange(node.id, "statement", json)}
+            guidelineId={guidelineId}
           />
         </div>
 
@@ -136,6 +141,7 @@ export function NodeEditorPanel({
           <RichTextEditor
             content={node.comment ?? null}
             onChange={(json) => onFieldChange(node.id, "comment", json)}
+            guidelineId={guidelineId}
           />
         </div>
 
@@ -146,6 +152,7 @@ export function NodeEditorPanel({
           <RichTextEditor
             content={node.evidenceSummary ?? null}
             onChange={(json) => onFieldChange(node.id, "evidenceSummary", json)}
+            guidelineId={guidelineId}
           />
         </div>
       </Card>

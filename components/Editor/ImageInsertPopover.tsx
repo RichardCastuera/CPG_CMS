@@ -1,4 +1,3 @@
-// components/editor/ImageInsertPopover.tsx
 "use client";
 
 import { useState } from "react";
@@ -12,7 +11,6 @@ import { useQuery } from "@tanstack/react-query";
 interface Artifact {
   id: string;
   url: string;
-  thumbnailUrl: string;
   name: string;
 }
 
@@ -76,7 +74,7 @@ export function ImageInsertPopover({
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={artifact.thumbnailUrl}
+                  src={artifact.url}
                   alt={artifact.name}
                   className="h-full w-full object-cover"
                 />

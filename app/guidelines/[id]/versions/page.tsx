@@ -1,7 +1,8 @@
 "use client";
 
-import { use } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { use, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -21,10 +22,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  GuidelineWithVersions,
-  GuidelineVersion,
-  VersionStatus,
-} from "@/constants";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { VersionFormDialog } from "@/components/VersionFormDialog";
+import { GuidelineWithVersions, VersionStatus } from "@/constants";
 
 async function fetchGuidelineInfo(
   guidelineId: string,
@@ -64,17 +67,134 @@ function initials(name: string | null): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+type DialogState =
+  | { open: false }
+  | { open: true; mode: "create" }
+  | { open: true; mode: "rename"; versionId: string; currentNumber: string };
+
 export default function GuidelineVersionsPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id: guidelineId } = use(params);
+  const queryClient = useQueryClient();
+  const router = useRouter();
+  const [dialogState, setDialogState] = useState<DialogState>({ open: false });
+  const [dialogError, setDialogError] = useState<string | null>(null);
 
   const { data: guideline, isLoading } = useQuery({
     queryKey: ["guideline-info", guidelineId],
     queryFn: () => fetchGuidelineInfo(guidelineId),
   });
+
+  const activateMutation = useMutation({
+    mutationFn: (versionId: string) =>
+      fetch(`/api/guidelines/${guidelineId}/versions/${versionId}/activate`, {
+        method: "POST",
+      }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["guideline-info", guidelineId],
+      }),
+  });
+
+  const renameMutation = useMutation({
+    mutationFn: ({
+      versionId,
+      version_number,
+    }: {
+      versionId: string;
+      version_number: string;
+    }) =>
+      fetch(`/api/guidelines/${guidelineId}/versions/${versionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ version_number }),
+      }).then((res) => {
+        if (!res.ok) throw new Error("Failed to rename version");
+        return res.json();
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["guideline-info", guidelineId],
+      });
+      setDialogState({ open: false });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (versionId: string) =>
+      fetch(`/api/guidelines/${guidelineId}/versions/${versionId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({
+        queryKey: ["guideline-info", guidelineId],
+      }),
+  });
+
+  const newVersionMutation = useMutation({
+    mutationFn: (versionNumber: string) => {
+      const sourceVersionId =
+        guideline!.current_version_id ?? guideline!.versions[0]?.id;
+      return fetch(`/api/guidelines/${guidelineId}/versions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sourceVersionId, versionNumber }),
+      }).then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.error ?? "Failed to create new version");
+        }
+        return res.json();
+      });
+    },
+    onSuccess: (data) => {
+      setDialogState({ open: false });
+      router.push(`/guidelines/${guidelineId}/versions/${data.id}`);
+    },
+  });
+
+  function handleDelete(versionId: string, versionNumber: string) {
+    if (confirm(`Delete version ${versionNumber}? This cannot be undone.`)) {
+      deleteMutation.mutate(versionId, {
+        onError: (err: any) =>
+          alert(err?.message ?? "Failed to delete version"),
+      });
+    }
+  }
+
+  function friendlyVersionError(raw: string): string {
+    if (raw.includes("guideline_versions_guideline_id_version_number_key")) {
+      return "A version with that number already exists. Try a different one.";
+    }
+    return raw;
+  }
+
+  function handleDialogSubmit(versionNumber: string) {
+    setDialogError(null);
+    if (dialogState.open && dialogState.mode === "create") {
+      newVersionMutation.mutate(versionNumber, {
+        onError: (err: any) =>
+          setDialogError(
+            friendlyVersionError(
+              err?.message ?? "Failed to create new version",
+            ),
+          ),
+      });
+    } else if (dialogState.open && dialogState.mode === "rename") {
+      renameMutation.mutate(
+        { versionId: dialogState.versionId, version_number: versionNumber },
+        {
+          onError: (err: any) =>
+            setDialogError(
+              friendlyVersionError(err?.message ?? "Failed to rename version"),
+            ),
+        },
+      );
+    }
+  }
 
   if (isLoading) {
     return (
@@ -88,7 +208,6 @@ export default function GuidelineVersionsPage({
     );
   }
 
-  // Newest first — sort by created_at descending
   const sortedVersions = [...guideline.versions].sort(
     (a, b) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
@@ -117,7 +236,10 @@ export default function GuidelineVersionsPage({
             <GitCompare size={16} />
             Compare versions
           </Button>
-          <Button className="gap-2 bg-[#2F6B4F] hover:bg-[#2F6B4F]/90">
+          <Button
+            className="gap-2 bg-[#2F6B4F] hover:bg-[#2F6B4F]/90"
+            onClick={() => setDialogState({ open: true, mode: "create" })}
+          >
             <Plus size={16} />
             New version
           </Button>
@@ -197,7 +319,7 @@ export default function GuidelineVersionsPage({
 
                 <div className="mt-3 flex items-center gap-4 text-sm">
                   <Link
-                    href={`/guidelines/${guideline.id}`}
+                    href={`/guidelines/${guideline.id}/versions/${version.id}`}
                     className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
                   >
                     <FileText size={14} />
@@ -216,17 +338,71 @@ export default function GuidelineVersionsPage({
                     Export
                   </button>
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="text-muted-foreground hover:text-foreground">
-                        <MoreHorizontal size={16} />
-                      </button>
-                    </DropdownMenuTrigger>
+                    <DropdownMenuTrigger
+                      render={
+                        <button className="text-muted-foreground hover:text-foreground">
+                          <MoreHorizontal size={16} />
+                        </button>
+                      }
+                    />
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>Mark as active</DropdownMenuItem>
-                      <DropdownMenuItem>Rename version</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive focus:text-destructive">
-                        Delete version
+                      {isActive ? (
+                        <Tooltip>
+                          <TooltipTrigger render={<span className="block" />}>
+                            <DropdownMenuItem disabled>
+                              Mark as active
+                            </DropdownMenuItem>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            This version is already active
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <DropdownMenuItem
+                          onClick={() => activateMutation.mutate(version.id)}
+                        >
+                          Mark as active
+                        </DropdownMenuItem>
+                      )}
+
+                      <DropdownMenuItem
+                        onClick={() =>
+                          setDialogState({
+                            open: true,
+                            mode: "rename",
+                            versionId: version.id,
+                            currentNumber: version.version_number,
+                          })
+                        }
+                      >
+                        Rename version
                       </DropdownMenuItem>
+
+                      {isActive ? (
+                        <Tooltip>
+                          <TooltipTrigger render={<span className="block" />}>
+                            <DropdownMenuItem
+                              disabled
+                              className="text-destructive focus:text-destructive"
+                            >
+                              Delete version
+                            </DropdownMenuItem>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Can't delete the active version — mark another
+                            version as active first
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() =>
+                            handleDelete(version.id, version.version_number)
+                          }
+                        >
+                          Delete version
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -235,6 +411,29 @@ export default function GuidelineVersionsPage({
           })}
         </div>
       </div>
+
+      <VersionFormDialog
+        open={dialogState.open}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDialogState({ open: false });
+            setDialogError(null);
+          }
+        }}
+        mode={dialogState.open ? dialogState.mode : "create"}
+        initialValue={
+          dialogState.open && dialogState.mode === "rename"
+            ? dialogState.currentNumber
+            : ""
+        }
+        isSubmitting={
+          dialogState.open && dialogState.mode === "create"
+            ? newVersionMutation.isPending
+            : renameMutation.isPending
+        }
+        errorMessage={dialogError}
+        onSubmit={handleDialogSubmit}
+      />
     </div>
   );
 }

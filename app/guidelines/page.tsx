@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getColumns } from "@/components/Guidelines/Columns";
 import { DataTable } from "@/components/Guidelines/DataTable";
-import { NewGuidelineButton } from "@/components/NewGuidelineButton";
+import { CreateGuidelineChoice } from "@/components/CreateGuidelineChoice";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { GuidelineWithVersions } from "@/constants";
 import { Plus } from "lucide-react";
@@ -16,6 +18,7 @@ async function fetchGuidelines(): Promise<GuidelineWithVersions[]> {
 
 export default function Guidelines() {
   const queryClient = useQueryClient();
+  const [choiceOpen, setChoiceOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["guidelines-list"],
@@ -36,9 +39,17 @@ export default function Guidelines() {
       queryClient.invalidateQueries({ queryKey: ["guidelines-list"] }),
   });
 
+  const forcePublishMutation = useMutation({
+    mutationFn: (id: string) =>
+      fetch(`/api/guidelines/${id}/force-publish`, { method: "POST" }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["guidelines-list"] }),
+  });
+
   const columns = getColumns({
     onArchive: (id) => archiveMutation.mutate(id),
     onDelete: (id) => deleteMutation.mutate(id),
+    onForcePublish: (id) => forcePublishMutation.mutate(id),
   });
 
   return (
@@ -51,11 +62,13 @@ export default function Guidelines() {
               Manage your clinical practice guidelines.
             </p>
           </div>
-          <NewGuidelineButton
-            href={"/guidelines/create_guideline"}
-            icon={<Plus size={24}></Plus>}
-            title={"New Guideline"}
-          />
+          <Button
+            onClick={() => setChoiceOpen(true)}
+            className="gap-2 bg-[#2F6B4F] hover:bg-[#2F6B4F]/90"
+          >
+            <Plus size={18} />
+            New Guideline
+          </Button>
         </header>
         <Card className="mb-6 px-6">
           {isLoading ? (
@@ -67,6 +80,8 @@ export default function Guidelines() {
           )}
         </Card>
       </div>
+
+      <CreateGuidelineChoice open={choiceOpen} onOpenChange={setChoiceOpen} />
     </div>
   );
 }
