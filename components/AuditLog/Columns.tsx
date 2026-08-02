@@ -41,7 +41,9 @@ export const auditLogColumns: ColumnDef<AuditLogEntry>[] = [
     accessorKey: "target",
     header: "Target",
     cell: ({ row }) => (
-      <span className="font-mono text-sm">{row.original.target}</span>
+      <span className="block max-w-xs truncate" title={row.original.target}>
+        {row.original.target}
+      </span>
     ),
   },
 ];

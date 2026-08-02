@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { AppUser, UserRole } from "@/lib/users";
 import { formatRelativeShort } from "@/lib/formatRelativeShort";
 import { UserActionsMenu } from "./UserActionsMenu";
+import { Check, RefreshCw } from "lucide-react";
 
 const ROLE_BADGE_STYLES: Record<UserRole, string> = {
   admin: "bg-emerald-100 text-emerald-800 hover:bg-emerald-100",
@@ -21,6 +22,9 @@ const ROLE_LABELS: Record<UserRole, string> = {
 export function getUserColumns(handlers: {
   onChangeRole: (id: string, role: UserRole) => void;
   onRemove: (id: string) => void;
+  onResendInvite: (id: string) => void;
+  resendingId?: string | null;
+  justSentId?: string | null;
 }): ColumnDef<AppUser>[] {
   return [
     { accessorKey: "name", header: "Name" },
@@ -37,23 +41,58 @@ export function getUserColumns(handlers: {
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => (
-        <span
-          className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-            row.original.status === "active"
-              ? "bg-emerald-100 text-emerald-800"
-              : "bg-amber-100 text-amber-800"
-          }`}
-        >
-          {row.original.status === "active" ? "Active" : "Invited"}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const isInvited = row.original.status === "invited";
+        const isResending = handlers.resendingId === row.original.id;
+        const justSent = handlers.justSentId === row.original.id;
+        return (
+          <div className="flex items-center gap-2">
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                isInvited
+                  ? "bg-amber-100 text-amber-800"
+                  : "bg-emerald-100 text-emerald-800"
+              }`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  isInvited ? "bg-amber-500" : "bg-emerald-500"
+                }`}
+              />
+              {isInvited ? "Invited" : "Active"}
+            </span>
+            {isInvited && (
+              <button
+                onClick={() => handlers.onResendInvite(row.original.id)}
+                disabled={isResending || justSent}
+                className="inline-flex items-center gap-1 text-xs font-medium text-[#2F6B4F] hover:text-[#245539] disabled:opacity-60"
+              >
+                {justSent ? (
+                  <>
+                    <Check size={11} />
+                    Sent
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw
+                      size={11}
+                      className={isResending ? "animate-spin" : ""}
+                    />
+                    {isResending ? "Sending" : "Resend"}
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        );
+      },
     },
     {
       accessorKey: "lastActiveAt",
       header: "Last active",
       cell: ({ row }) => (
         <span className="text-muted-foreground">
+          {row.original.status === "invited" ? "Invited " : ""}
           {formatRelativeShort(row.original.lastActiveAt)}
         </span>
       ),
@@ -67,6 +106,7 @@ export function getUserColumns(handlers: {
             user={row.original}
             onChangeRole={handlers.onChangeRole}
             onRemove={handlers.onRemove}
+            onResendInvite={handlers.onResendInvite}
           />
         </div>
       ),

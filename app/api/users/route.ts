@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await admin.auth.admin.inviteUserByEmail(body.email, {
     data: { name: body.name ?? body.email.split("@")[0] },
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
   });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });

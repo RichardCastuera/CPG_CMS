@@ -8,6 +8,7 @@ import {
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  RowSelectionState,
   SortingState,
   useReactTable,
 } from "@tanstack/react-table";
@@ -24,12 +25,18 @@ import React from "react";
 import { Input } from "../ui/input";
 import { Search } from "lucide-react";
 import { DataTablePagination } from "./DataTablePagination";
+import { Checkbox } from "../ui/checkbox";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
-  searchColumn?: string; // which column id to filter on; defaults to "title"
+  searchColumn?: string;
   searchPlaceholder?: string;
+  enableRowSelection?: boolean;
+  rowSelection?: RowSelectionState;
+  onRowSelectionChange?: (selection: RowSelectionState) => void;
+  getRowId?: (row: TData) => string;
+  bulkActionsBar?: React.ReactNode;
 }
 
 export function DataTable<TData, TValue>({
@@ -37,31 +44,71 @@ export function DataTable<TData, TValue>({
   data,
   searchColumn = "title",
   searchPlaceholder = "Search...",
+  enableRowSelection = false,
+  rowSelection = {},
+  onRowSelectionChange,
+  getRowId,
+  bulkActionsBar,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
-
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   );
 
+  const selectionColumn: ColumnDef<TData, TValue> = {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        checked={
+          table.getIsAllPageRowsSelected() ||
+          (table.getIsSomePageRowsSelected() && "indeterminate")
+        }
+        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <Checkbox
+        checked={row.getIsSelected()}
+        onCheckedChange={(value) => row.toggleSelected(!!value)}
+        aria-label="Select row"
+      />
+    ),
+  };
+
+  const finalColumns = enableRowSelection
+    ? [selectionColumn, ...columns]
+    : columns;
+
   const table = useReactTable({
     data,
-    columns,
+    columns: finalColumns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
+    enableRowSelection,
+    onRowSelectionChange: (updater) => {
+      if (!onRowSelectionChange) return;
+      const next =
+        typeof updater === "function" ? updater(rowSelection) : updater;
+      onRowSelectionChange(next);
+    },
+    getRowId,
     state: {
       sorting,
       columnFilters,
+      rowSelection,
     },
   });
 
+  const selectedCount = Object.keys(rowSelection).length;
+
   return (
     <div>
-      <div className="flex items-center py-4">
+      <div className="flex items-center justify-between gap-4 py-4">
         <div className="relative max-w-sm w-full">
           <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -75,8 +122,9 @@ export function DataTable<TData, TValue>({
             className="max-w-sm pl-9"
           />
         </div>
+        {enableRowSelection && selectedCount > 0 && bulkActionsBar}
       </div>
-      <div className="overflow-hidden rounded-md border">
+      <div className="overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -116,7 +164,7 @@ export function DataTable<TData, TValue>({
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={finalColumns.length}
                   className="h-24 text-center"
                 >
                   No results.

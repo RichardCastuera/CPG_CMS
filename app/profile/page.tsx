@@ -113,11 +113,19 @@ export default function ProfilePage() {
         <CardContent className="space-y-3">
           <div>
             <label className="mb-1 block text-sm font-medium">Email</label>
-            <Input value={user.email} disabled />
+            <Input
+              value={user.email}
+              disabled
+              className="disabled:text-foreground disabled:opacity-100 disabled:bg-muted"
+            />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Role</label>
-            <Input value={ROLE_LABELS[user.role]} disabled />
+            <Input
+              value={ROLE_LABELS[user.role]}
+              disabled
+              className="disabled:text-foreground disabled:opacity-100 disabled:bg-muted"
+            />
           </div>
         </CardContent>
       </Card>

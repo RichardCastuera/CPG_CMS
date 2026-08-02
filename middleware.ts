@@ -27,7 +27,9 @@ export async function middleware(request: NextRequest) {
 
   const isPublicRoute =
   request.nextUrl.pathname.startsWith("/login") ||
-  request.nextUrl.pathname.startsWith("/signup");
+  request.nextUrl.pathname.startsWith("/signup") ||
+  request.nextUrl.pathname.startsWith("/auth/callback") ||
+  request.nextUrl.pathname.startsWith("/set-password");
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
