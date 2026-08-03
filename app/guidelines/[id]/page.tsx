@@ -28,7 +28,14 @@ export default async function GuidelineRedirectPage({
     )[0];
 
   const targetVersionId =
-    draft?.id ?? guideline.current_version_id ?? guideline.versions?.[0]?.id;
+    guideline.current_version_id ??
+    guideline.versions
+      ?.filter((v) => v.status === "draft")
+      .sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      )[0]?.id ??
+    guideline.versions?.[0]?.id;
 
   if (!targetVersionId) notFound();
 

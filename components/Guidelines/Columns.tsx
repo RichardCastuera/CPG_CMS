@@ -20,8 +20,6 @@ const statusLabels: Record<VersionStatus, string> = {
   superseded: "Superseded",
 };
 
-// Detects "parallel" releases: two or more versions sharing the same version_number
-// (e.g. an inpatient track and an outpatient track published together)
 function hasParallelVersions(
   versions: GuidelineWithVersions["versions"],
 ): boolean {
@@ -34,7 +32,6 @@ function hasParallelVersions(
   return false;
 }
 
-// Lightweight relative-time formatter, e.g. "12 min ago", "3 weeks ago"
 function timeAgo(dateString: string): string {
   const diffMs = Date.now() - new Date(dateString).getTime();
   const minutes = Math.floor(diffMs / 60000);
@@ -98,20 +95,29 @@ export function getColumns(
       accessorKey: "versions",
       header: "Versions",
       cell: ({ row }) => {
-        const versions = row.original.versions;
+        const guideline = row.original;
+        const versions = guideline.versions;
         const visible = versions.slice(0, 3);
         const extra = versions.length - visible.length;
 
         return (
           <div className="flex flex-wrap items-center gap-1.5">
-            {visible.map((v) => (
-              <span
-                key={v.id}
-                className={`rounded-md px-2 py-0.5 text-xs font-medium ${statusStyles[v.status]}`}
-              >
-                {v.version_number} · {statusLabels[v.status]}
-              </span>
-            ))}
+            {visible.map((v) => {
+              const isActive = v.id === guideline.current_version_id;
+              return (
+                <span
+                  key={v.id}
+                  className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium ${statusStyles[v.status]} ${
+                    isActive ? "ring-1 ring-emerald-600 ring-offset-1" : ""
+                  }`}
+                >
+                  {isActive && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+                  )}
+                  {v.version_number} · {statusLabels[v.status]}
+                </span>
+              );
+            })}
             {extra > 0 && (
               <span className="text-xs text-muted-foreground">
                 +{extra} more

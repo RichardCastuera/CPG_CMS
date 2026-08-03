@@ -26,10 +26,10 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   const isPublicRoute =
-  request.nextUrl.pathname.startsWith("/login") ||
-  request.nextUrl.pathname.startsWith("/signup") ||
-  request.nextUrl.pathname.startsWith("/auth/callback") ||
-  request.nextUrl.pathname.startsWith("/set-password");
+    request.nextUrl.pathname.startsWith("/login") ||
+    request.nextUrl.pathname.startsWith("/signup") ||
+    request.nextUrl.pathname.startsWith("/auth/callback") ||
+    request.nextUrl.pathname.startsWith("/set-password");
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
@@ -41,5 +41,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };
