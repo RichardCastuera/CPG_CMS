@@ -1,21 +1,16 @@
+// components/CreateGuidelineChoice.tsx
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { FilePlus, Upload } from "lucide-react";
+import { FilePlus, UploadCloud } from "lucide-react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "./ui/dialog";
-
-async function fetchMe() {
-  const res = await fetch("/api/me");
-  if (!res.ok) return null;
-  return res.json();
-}
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 interface CreateGuidelineChoiceProps {
   open: boolean;
@@ -27,55 +22,88 @@ export function CreateGuidelineChoice({
   onOpenChange,
 }: CreateGuidelineChoiceProps) {
   const router = useRouter();
-  const { data: me } = useQuery({
-    queryKey: ["me"],
-    queryFn: fetchMe,
-  });
+  const [creating, setCreating] = useState(false);
 
-  const isAdmin = me?.role === "admin";
+  async function createGuideline(payload: Record<string, unknown>) {
+    setCreating(true);
+    try {
+      const res = await fetch("/api/guidelines", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const { error } = await res.json();
+        throw new Error(error ?? "Failed to create guideline");
+      }
+
+      const { id, versionId } = await res.json();
+      onOpenChange(false);
+      router.push(`/guidelines/${id}/versions/${versionId}?view=info`);
+    } catch (err) {
+      console.error(err);
+      setCreating(false);
+    }
+  }
+
+  function handleStartFromScratch() {
+    createGuideline({
+      title: "Untitled guideline",
+      guideline_type: "Interim",
+      version_number: "v1.0",
+      source: "authored",
+    });
+  }
+
+  function handleImportExisting() {
+    createGuideline({
+      title: "Untitled guideline",
+      guideline_type: "Compendium",
+      version_number: "v1.0",
+      status: "published",
+      source: "imported",
+    });
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Create a guideline</DialogTitle>
+          <DialogTitle>New guideline</DialogTitle>
           <DialogDescription>
-            Choose how you want to add this guideline.
+            How would you like to add this guideline?
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-3">
+        <div className="grid gap-3 py-2">
           <button
-            type="button"
-            onClick={() => router.push("/guidelines/create_guideline?mode=new")}
-            className="flex items-start gap-3 rounded-lg border p-4 text-left hover:bg-muted/50"
+            onClick={handleStartFromScratch}
+            disabled={creating}
+            className="flex items-start gap-3 rounded-lg border p-4 text-left transition-colors hover:border-emerald-600 hover:bg-emerald-50/50 disabled:opacity-50"
           >
-            <FilePlus size={20} className="mt-0.5 shrink-0 text-[#2F6B4F]" />
+            <FilePlus size={20} className="mt-0.5 shrink-0 text-emerald-700" />
             <div>
-              <p className="font-medium">New guideline</p>
+              <p className="font-medium">Start from scratch</p>
               <p className="text-sm text-muted-foreground">
-                Start authoring a new guideline from scratch. Begins as a draft.
+                Draft a new guideline in the editor, starting as v1.0.
               </p>
             </div>
           </button>
 
-          {isAdmin && (
-            <button
-              type="button"
-              onClick={() =>
-                router.push("/guidelines/create_guideline?mode=import")
-              }
-              className="flex items-start gap-3 rounded-lg border p-4 text-left hover:bg-muted/50"
-            >
-              <Upload size={20} className="mt-0.5 shrink-0 text-[#2F6B4F]" />
-              <div>
-                <p className="font-medium">Import existing guideline</p>
-                <p className="text-sm text-muted-foreground">
-                  Bring in a guideline already published outside this system.
-                </p>
-              </div>
-            </button>
-          )}
+          <button
+            onClick={handleImportExisting}
+            disabled={creating}
+            className="flex items-start gap-3 rounded-lg border p-4 text-left transition-colors hover:border-emerald-600 hover:bg-emerald-50/50 disabled:opacity-50"
+          >
+            <UploadCloud size={20} className="mt-0.5 shrink-0 text-emerald-700" />
+            <div>
+              <p className="font-medium">Import an existing guideline</p>
+              <p className="text-sm text-muted-foreground">
+                Catalogue a guideline that's already been published elsewhere.
+              </p>
+            </div>
+          </button>
         </div>
       </DialogContent>
     </Dialog>

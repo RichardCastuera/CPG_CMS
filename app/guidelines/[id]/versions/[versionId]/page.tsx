@@ -23,6 +23,7 @@ import { useComments } from "@/lib/hooks/useComments";
 import { GuidelineWithVersions } from "@/constants";
 import { GuidelineInfoPanel } from "@/components/Guideline-Info/GuidelineInfoPanel";
 import { useArtifacts } from "@/lib/hooks/useArtifacts";
+import { useSearchParams } from "next/navigation";
 
 async function fetchGuidelineInfo(
   guidelineId: string,
@@ -50,12 +51,15 @@ export default function GuidelineEditor({
 }) {
   const { id: guidelineId, versionId } = use(params);
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
 
   const [tree, setTree] = useState<GuidelineTree>({ sections: [] });
   const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
   const [sideTab, setSideTab] = useState<SidePanelTab>("artifacts");
   const [referenceQuery, setReferenceQuery] = useState("");
-  const [mainView, setMainView] = useState<"node" | "info">("node");
+  const [mainView, setMainView] = useState<"node" | "info">(
+    searchParams.get("view") === "info" ? "info" : "node",
+  );
   const activeNodeLoc = activeNodeId
     ? findNodeLocation(tree, activeNodeId)
     : null;
@@ -294,57 +298,61 @@ export default function GuidelineEditor({
           )}
         </main>
 
-        <aside className="flex h-full w-80 shrink-0 flex-col overflow-hidden border-l bg-white">
-          <SidePanelTabs
-            active={sideTab}
-            onChange={setSideTab}
-            counts={{
-              artifacts: artifactsData.artifacts.length,
-              references: referencesData.attached.length,
-              comments: commentsData.comments.filter((c) => !c.resolved).length,
-            }}
-          />
-          <div className="min-h-0 flex-1">
-            {sideTab === "artifacts" && (
-              <ArtifactsPanel
-                artifacts={artifactsData.artifacts}
-                isLoading={artifactsData.isLoading}
-                isUploading={artifactsData.isUploading}
-                upload={artifactsData.upload}
-                updateCaption={artifactsData.updateCaption}
-                remove={artifactsData.remove}
-              />
-            )}
-            {sideTab === "references" && (
-              <ReferencesPanel
-                attached={referencesData.attached}
-                searchResults={referencesData.searchResults}
-                isSearching={referencesData.isSearching}
-                query={referenceQuery}
-                onQueryChange={setReferenceQuery}
-                attach={referencesData.attach}
-                detach={referencesData.detach}
-                createAndAttach={referencesData.createAndAttach}
-                isCreating={referencesData.isCreating}
-              />
-            )}
-            {sideTab === "comments" &&
-              (activeNodeId ? (
-                <CommentsPanel
-                  comments={commentsData.comments}
-                  isLoading={commentsData.isLoading}
-                  isAdding={commentsData.isAdding}
-                  addComment={commentsData.addComment}
-                  toggleResolved={commentsData.toggleResolved}
-                  deleteComment={commentsData.deleteComment}
+        {mainView === "node" && (
+          <aside className="flex h-full w-80 shrink-0 flex-col overflow-hidden border-l bg-white">
+            <SidePanelTabs
+              active={sideTab}
+              onChange={setSideTab}
+              counts={{
+                artifacts: artifactsData.artifacts.length,
+                references: referencesData.attached.length,
+                comments: commentsData.comments.filter((c) => !c.resolved)
+                  .length,
+              }}
+            />
+            <div className="min-h-0 flex-1">
+              {sideTab === "artifacts" && (
+                <ArtifactsPanel
+                  artifacts={artifactsData.artifacts}
+                  isLoading={artifactsData.isLoading}
+                  isUploading={artifactsData.isUploading}
+                  upload={artifactsData.upload}
+                  updateCaption={artifactsData.updateCaption}
+                  remove={artifactsData.remove}
                 />
-              ) : (
-                <p className="p-3 text-xs text-muted-foreground">
-                  Select a section, question, or recommendation to view comments
-                </p>
-              ))}
-          </div>
-        </aside>
+              )}
+              {sideTab === "references" && (
+                <ReferencesPanel
+                  attached={referencesData.attached}
+                  searchResults={referencesData.searchResults}
+                  isSearching={referencesData.isSearching}
+                  query={referenceQuery}
+                  onQueryChange={setReferenceQuery}
+                  attach={referencesData.attach}
+                  detach={referencesData.detach}
+                  createAndAttach={referencesData.createAndAttach}
+                  isCreating={referencesData.isCreating}
+                />
+              )}
+              {sideTab === "comments" &&
+                (activeNodeId ? (
+                  <CommentsPanel
+                    comments={commentsData.comments}
+                    isLoading={commentsData.isLoading}
+                    isAdding={commentsData.isAdding}
+                    addComment={commentsData.addComment}
+                    toggleResolved={commentsData.toggleResolved}
+                    deleteComment={commentsData.deleteComment}
+                  />
+                ) : (
+                  <p className="p-3 text-xs text-muted-foreground">
+                    Select a section, question, or recommendation to view
+                    comments
+                  </p>
+                ))}
+            </div>
+          </aside>
+        )}
       </div>
     </div>
   );

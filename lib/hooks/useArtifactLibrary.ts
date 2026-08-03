@@ -10,19 +10,9 @@ interface LibraryArtifact {
   category: ArtifactCategory;
   fileFormat: string;
   sizeLabel: string;
-  guidelineVersionLabel: string;
+  guidelineLabel: string;
   guidelineId: string;
-}
-
-interface UseArtifactLibraryOptions {
-  guidelineId?: string;
-  category?: ArtifactCategory | "all";
-}
-
-async function fetchAllArtifacts(): Promise<LibraryArtifact[]> {
-  const res = await fetch(`/api/artifacts`);
-  if (!res.ok) throw new Error("Failed to load artifact library");
-  return res.json();
+  url: string | null;
 }
 
 interface UseArtifactLibraryOptions {
@@ -31,7 +21,17 @@ interface UseArtifactLibraryOptions {
   search?: string;
 }
 
-export function useArtifactLibrary({ guidelineId, category, search }: UseArtifactLibraryOptions) {
+async function fetchAllArtifacts(): Promise<LibraryArtifact[]> {
+  const res = await fetch(`/api/artifacts`);
+  if (!res.ok) throw new Error("Failed to load artifact library");
+  return res.json();
+}
+
+export function useArtifactLibrary({
+  guidelineId,
+  category,
+  search,
+}: UseArtifactLibraryOptions) {
   const query = useQuery({
     queryKey: ["artifact-library"],
     queryFn: fetchAllArtifacts,

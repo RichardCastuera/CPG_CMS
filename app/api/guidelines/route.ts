@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
     guidelineId: guideline.id,
   });
 
-  return NextResponse.json({ id: guideline.id });
+  return NextResponse.json({ id: guideline.id, versionId: version.id });
 }
 
 function mapGuidelineStatusToVersionStatus(

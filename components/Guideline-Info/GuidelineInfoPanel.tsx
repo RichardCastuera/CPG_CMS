@@ -108,15 +108,33 @@ export function GuidelineInfoPanel({
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Status</label>
-            {/* Read-only: status transitions happen through submit-or-publish
-                and approve-version actions, not free-form editing here. */}
-            <div className="flex h-9 items-center">
-              <span
-                className={`rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_BADGE_STYLES[info.status]}`}
+            {info.source === "imported" ? (
+              <Select
+                value={info.status}
+                onValueChange={(v) => onChange("status", v as GuidelineStatus)}
               >
-                {STATUS_LABELS[info.status]}
-              </span>
-            </div>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="in_review">In review</SelectItem>
+                  <SelectItem value="published">Published</SelectItem>
+                  <SelectItem value="archived">Archived</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="flex h-9 items-center justify-between">
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_BADGE_STYLES[info.status]}`}
+                >
+                  {STATUS_LABELS[info.status]}
+                </span>
+                <span className="ml-4 text-xs text-muted-foreground">
+                  Authored guidelines start as Draft.
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

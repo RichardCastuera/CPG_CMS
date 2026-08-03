@@ -7,7 +7,7 @@ import {
   Reference,
   NewReferenceInput,
 } from "@/lib/references";
-import { NewReferenceDialog } from "../Reference/NewReferenceDialog";
+import { NewReferenceDialog } from "../References/NewReferenceDialog";
 
 interface ReferencesPanelProps {
   attached: AttachedReference[];
@@ -98,6 +98,36 @@ export function ReferencesPanel({
         {isSearching && (
           <p className="text-xs text-muted-foreground">Searching...</p>
         )}
+        {!isSearching && query.trim().length === 0 && (
+          <div className="rounded-md border border-dashed p-4 text-center">
+            <p className="text-xs text-muted-foreground">
+              Start typing to search the citation library
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              or{" "}
+              <button
+                onClick={() => setNewRefOpen(true)}
+                className="font-medium text-emerald-700 hover:underline"
+              >
+                add a new reference
+              </button>
+            </p>
+          </div>
+        )}
+        {!isSearching &&
+          query.trim().length > 0 &&
+          searchResults.length === 0 && (
+            <p className="text-xs text-muted-foreground">
+              No matches — try a different search, or{" "}
+              <button
+                onClick={() => setNewRefOpen(true)}
+                className="font-medium text-emerald-700 hover:underline"
+              >
+                add a new reference
+              </button>
+              .
+            </p>
+          )}
         {!isSearching &&
           searchResults.map((ref) => (
             <button

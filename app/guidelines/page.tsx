@@ -4,16 +4,17 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getColumns } from "@/components/Guidelines/Columns";
 import { DataTable } from "@/components/Guidelines/DataTable";
-import { CreateGuidelineChoice } from "@/components/CreateGuidelineChoice";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { GuidelineWithVersions } from "@/constants";
 import { Plus } from "lucide-react";
+import { CreateGuidelineChoice } from "@/components/CreateGuidelineChoice";
 
 async function fetchGuidelines(): Promise<GuidelineWithVersions[]> {
   const res = await fetch("/api/guidelines");
   if (!res.ok) throw new Error("Failed to load guidelines");
-  return res.json();
+  const data: GuidelineWithVersions[] = await res.json();
+  return data.filter((g) => g.status !== "archived");
 }
 
 export default function Guidelines() {
