@@ -135,26 +135,6 @@ export function NodeEditorPanel({
             guidelineId={guidelineId}
           />
         </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium">Comment</label>
-          <RichTextEditor
-            content={node.comment ?? null}
-            onChange={(json) => onFieldChange(node.id, "comment", json)}
-            guidelineId={guidelineId}
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-medium">
-            Evidence Summary
-          </label>
-          <RichTextEditor
-            content={node.evidenceSummary ?? null}
-            onChange={(json) => onFieldChange(node.id, "evidenceSummary", json)}
-            guidelineId={guidelineId}
-          />
-        </div>
       </Card>
     </div>
   );

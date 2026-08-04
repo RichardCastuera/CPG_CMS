@@ -22,7 +22,6 @@ export default function AuditLogPage() {
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center gap-2">
-        <History size={20} />
         <h1 className="text-2xl font-bold">Audit log</h1>
       </div>
 

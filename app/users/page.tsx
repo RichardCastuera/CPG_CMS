@@ -3,7 +3,16 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { RowSelectionState } from "@tanstack/react-table";
-import { UserPlus, Trash2, RefreshCw } from "lucide-react";
+import {
+  UserPlus,
+  Trash2,
+  RefreshCw,
+  Users2,
+  ShieldCheck,
+  CircleCheck,
+  X,
+  MailPlus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,13 +33,28 @@ import {
 import { Card } from "@/components/ui/card";
 import { DataTable } from "@/components/Guidelines/DataTable";
 import { getUserColumns } from "@/components/Users/Columns";
+import { UsersTableSkeleton } from "@/components/Users/UsersTableSkeleton";
 import { AppUser, UserRole } from "@/lib/users";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import StatsCard from "@/components/Cards";
+import { LoadingBar } from "@/components/ui/loading-bar";
 
 async function fetchUsers(): Promise<AppUser[]> {
   const res = await fetch("/api/users");
   if (!res.ok) throw new Error("Failed to load users");
   return res.json();
+}
+
+function StatCardSkeleton() {
+  return (
+    <div className="flex items-center gap-3 rounded-lg border bg-card p-4 shadow-sm">
+      <LoadingBar className="h-9 w-9 rounded-lg" />
+      <div className="space-y-2">
+        <LoadingBar className="h-6 w-10" />
+        <LoadingBar className="h-3 w-20" />
+      </div>
+    </div>
+  );
 }
 
 export default function UsersPage() {
@@ -169,10 +193,63 @@ export default function UsersPage() {
     justSentId,
   });
 
+  const totalUsers = users?.length ?? 0;
+  const adminCount = users?.filter((u) => u.role === "admin").length ?? 0;
+  const pendingCount = users?.filter((u) => u.status === "invited").length ?? 0;
+  const activeCount = users?.filter((u) => u.status === "active").length ?? 0;
+
+  const bulkActionsBar = (
+    <div className="flex items-center gap-2 rounded-md border border-[#2F6B4F]/30 bg-[#2F6B4F]/5 px-3 py-1.5">
+      <span className="text-sm font-medium text-[#2F6B4F]">
+        {selectedIds.length} selected
+      </span>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-7 gap-1 px-2"
+        onClick={() => setRowSelection({})}
+      >
+        <X size={13} />
+        Clear
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-7 px-2"
+        onClick={() => setBulkRoleOpen(true)}
+      >
+        Change role
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        className="h-7 gap-1 px-2"
+        onClick={handleBulkResendInvite}
+      >
+        <RefreshCw size={13} />
+        Resend invites
+      </Button>
+      <Button
+        variant="destructive"
+        size="sm"
+        className="h-7 gap-1 px-2"
+        onClick={() => setBulkRemoveOpen(true)}
+      >
+        <Trash2 size={13} />
+        Remove
+      </Button>
+    </div>
+  );
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Users</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Users</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage who has access to this workspace and what they can do.
+          </p>
+        </div>
         <Button
           className="gap-2 bg-[#2F6B4F] hover:bg-[#2F6B4F]/90"
           onClick={() => setInviteOpen(true)}
@@ -182,11 +259,31 @@ export default function UsersPage() {
         </Button>
       </div>
 
-      <Card className="px-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {isLoading ? (
-          <p className="py-10 text-center text-sm text-muted-foreground">
-            Loading...
-          </p>
+          <>
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+            <StatCardSkeleton />
+          </>
+        ) : (
+          <>
+            <StatsCard icon={Users2} label="Total users" value={totalUsers} />
+            <StatsCard icon={ShieldCheck} label="Admins" value={adminCount} />
+            <StatsCard
+              icon={MailPlus}
+              label="Pending invites"
+              value={pendingCount}
+            />
+            <StatsCard icon={CircleCheck} label="Active" value={activeCount} />
+          </>
+        )}
+      </div>
+
+      <Card className="px-6 py-4">
+        {isLoading ? (
+          <UsersTableSkeleton rows={5} />
         ) : (
           <DataTable
             columns={columns}
@@ -197,38 +294,7 @@ export default function UsersPage() {
             rowSelection={rowSelection}
             onRowSelectionChange={setRowSelection}
             getRowId={(row) => row.id}
-            bulkActionsBar={
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  {selectedIds.length} selected
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setBulkRoleOpen(true)}
-                >
-                  Change role
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-1.5"
-                  onClick={handleBulkResendInvite}
-                >
-                  <RefreshCw size={14} />
-                  Resend invites
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-1.5 text-destructive hover:text-destructive"
-                  onClick={() => setBulkRemoveOpen(true)}
-                >
-                  <Trash2 size={14} />
-                  Remove
-                </Button>
-              </div>
-            }
+            bulkActionsBar={bulkActionsBar}
           />
         )}
       </Card>

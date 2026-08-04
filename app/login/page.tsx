@@ -31,8 +31,10 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/guidelines");
-    router.refresh();
+    // Full reload instead of client-side navigation — guarantees the
+    // middleware re-checks against the now-committed session cookie,
+    // rather than racing a soft navigation against cookie propagation.
+    window.location.href = "/dashboard";
   }
 
   return (

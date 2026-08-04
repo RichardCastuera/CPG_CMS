@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ConditionalSidebar } from "@/components/ConditionalSidebar";
 import { QueryProvider } from "@/components/providers/QueryProviders";
+import { SessionTimeout } from "@/components/SessionTimeout";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -32,9 +33,13 @@ export default function RootLayout({
         inter.variable,
       )}
     >
-      <body className="h-full bg-background font-sans text-foreground antialiased">
+      <body
+        className="h-full bg-background font-sans text-foreground antialiased"
+        suppressHydrationWarning
+      >
         <QueryProvider>
           <ConditionalSidebar>{children}</ConditionalSidebar>
+          <SessionTimeout />
         </QueryProvider>
       </body>
     </html>

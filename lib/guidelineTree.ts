@@ -30,8 +30,6 @@ export interface RecommendationNode {
   strength?: string;
   certaintyOfEvidence?: string;
   statement?: JSONContent;
-  comment?: JSONContent;
-  evidenceSummary?: JSONContent;
 }
 
 export type AnyNode = SectionNode | QuestionNode | RecommendationNode;

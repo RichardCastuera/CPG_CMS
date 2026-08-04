@@ -77,8 +77,6 @@ export async function GET(
               strength: r.strength ?? undefined,
               certaintyOfEvidence: r.certainty_of_evidence ?? undefined,
               statement: r.statement ?? undefined,
-              comment: r.comment ?? undefined,
-              evidenceSummary: r.evidence_summary ?? undefined,
             })),
         })),
     })),

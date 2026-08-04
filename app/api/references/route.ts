@@ -68,3 +68,63 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json(data);
 }
+
+export async function DELETE(req: NextRequest) {
+  const supabase = createClient(await cookies());
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
+  const { ids }: { ids: string[] } = await req.json();
+
+  if (!ids?.length) {
+    return NextResponse.json({ error: "No ids provided" }, { status: 400 });
+  }
+
+  // Block deletion of any reference that's still cited in a guideline.
+  const { data: citedLinks, error: citedError } = await supabase
+    .from("guideline_references")
+    .select("reference_id, references(label), guidelines(title)")
+    .in("reference_id", ids);
+
+  if (citedError) {
+    return NextResponse.json({ error: citedError.message }, { status: 400 });
+  }
+
+  if (citedLinks && citedLinks.length > 0) {
+    const blocked = Array.from(
+      new Map(
+        citedLinks.map((link: any) => [
+          link.reference_id,
+          {
+            id: link.reference_id,
+            label: link.references?.label ?? link.reference_id,
+            citedIn: citedLinks
+              .filter((l: any) => l.reference_id === link.reference_id)
+              .map((l: any) => l.guidelines?.title)
+              .filter(Boolean),
+          },
+        ])
+      ).values()
+    );
+
+    return NextResponse.json(
+      {
+        error: `${blocked.length} reference${
+          blocked.length > 1 ? "s are" : " is"
+        } still cited in a guideline and can't be deleted.`,
+        blocked,
+      },
+      { status: 409 }
+    );
+  }
+
+  const { error, count } = await supabase
+    .from("references")
+    .delete({ count: "exact" })
+    .in("id", ids);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  return NextResponse.json({ deleted: count ?? ids.length });
+}

@@ -8,7 +8,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("guideline_versions")
     .select(
-      "*, guidelines!inner(id, title, guideline_type, created_by, profiles(name))"
+      "*, guidelines!guideline_versions_guideline_id_fkey!inner(id, title, guideline_type, created_by, profiles(name))"
     )
     .order("created_at", { ascending: false });
 

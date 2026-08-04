@@ -4,15 +4,11 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getColumns } from "@/components/Archives/Columns";
 import { DataTable } from "@/components/Guidelines/DataTable";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Archive, FileText, Info } from "lucide-react";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import { Archive, CalendarClock, Info, Pencil } from "lucide-react";
+import StatsCard from "@/components/Cards";
 
 async function fetchArchives() {
   const res = await fetch("/api/guidelines");
@@ -82,38 +78,33 @@ export default function ArchivesPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex items-center gap-2">
-        <Archive className="h-6 w-6 text-foreground" />
-        <h1 className="text-2xl font-bold">Archive</h1>
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Archive</h1>
+          <p className="text-sm text-muted-foreground">
+            Archived guidelines are kept, not deleted. Any version can be
+            restored at any time.
+          </p>
+        </div>
       </div>
 
+      {/* Summary cards */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Card>
-          <CardContent className="flex flex-col gap-1 p-5">
-            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              <Archive className="h-3.5 w-3.5" />
-              Archived guidelines
-            </div>
-            <div className="text-3xl font-bold">{data?.length ?? 0}</div>
-          </CardContent>
-        </Card>
+        <StatsCard
+          icon={Archive}
+          label="Archived guidelines"
+          value={data?.length ?? 0}
+          iconClassName="rounded-lg bg-slate-100 p-2 text-slate-600"
+        />
 
-        <Card>
-          <CardContent className="flex items-center justify-between p-5">
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                <FileText className="h-3.5 w-3.5" />
-                Retention window
-              </div>
-              <div className="text-3xl font-bold">
-                {retentionYears ?? "—"}{" "}
-                <span className="text-lg font-normal text-muted-foreground">
-                  yrs
-                </span>
-              </div>
-            </div>
-
-            {isEditingRetention ? (
+        <StatsCard
+          icon={CalendarClock}
+          label="Retention window"
+          value={retentionYears ?? "—"}
+          valueSuffix="yrs"
+          action={
+            isEditingRetention ? (
               <div className="flex items-center gap-2">
                 <Input
                   type="number"
@@ -145,49 +136,58 @@ export default function ArchivesPage() {
               <Button
                 size="sm"
                 variant="outline"
+                className="gap-1.5"
                 onClick={() => {
                   setRetentionInput(String(retentionYears ?? ""));
                   setIsEditingRetention(true);
                 }}
               >
+                <Pencil className="h-3.5 w-3.5" />
                 Change
               </Button>
-            )}
-          </CardContent>
-        </Card>
+            )
+          }
+        />
       </div>
 
-      <Card className="px-6">
-        <div className="flex items-center gap-2 pt-6">
-          <h2 className="text-sm font-semibold">Archived guidelines</h2>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <button className="text-muted-foreground hover:text-foreground">
-                  <Info size={14} />
-                </button>
-              }
-            />
-            <TooltipContent className="max-w-xs">
-              A nightly job archives any published guideline whose current
-              version exceeds the retention window above. Admins can also
-              archive manually from a guideline's actions menu at any time.
-            </TooltipContent>
-          </Tooltip>
-        </div>
+      {/* Archived guidelines table */}
+      <Card className="border-slate-200 shadow-none">
+        <div className="space-y-4 px-6">
+          <div className="space-y-3">
+            <div className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-3">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+              <p className="text-xs leading-relaxed text-slate-600">
+                A guideline is archived automatically once its current version
+                passes the retention window above. An admin may also archive a
+                guideline manually from its actions menu.
+              </p>
+            </div>
+          </div>
 
-        {isLoading ? (
-          <p className="py-10 text-center text-sm text-muted-foreground">
-            Loading...
-          </p>
-        ) : (
-          <DataTable
-            columns={columns}
-            data={data ?? []}
-            searchColumn="title"
-            searchPlaceholder="Search archive"
-          />
-        )}
+          {isLoading ? (
+            <p className="py-10 text-center text-sm text-muted-foreground">
+              Loading...
+            </p>
+          ) : data?.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-14 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+                <Archive className="h-5 w-5 text-slate-400" />
+              </div>
+              <p className="text-sm font-medium">No archived guidelines</p>
+              <p className="max-w-xs text-xs text-muted-foreground">
+                Guidelines will appear here once archived manually or
+                automatically after the retention window above.
+              </p>
+            </div>
+          ) : (
+            <DataTable
+              columns={columns}
+              data={data ?? []}
+              searchColumn="title"
+              searchPlaceholder="Search archive"
+            />
+          )}
+        </div>
       </Card>
     </div>
   );
