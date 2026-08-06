@@ -112,7 +112,7 @@ export function ArtifactCard({
         </p>
         {guidelineId ? (
           <a
-            href={`/guidelines/${guidelineId}`}
+            href={`/guidelines/${guidelineId}/versions`}
             onClick={(e) => e.stopPropagation()}
             className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground"
           >

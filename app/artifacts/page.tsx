@@ -31,6 +31,7 @@ import { ArtifactCategory } from "@/lib/artifacts";
 import { useDebounce } from "use-debounce";
 import { ArtifactCard } from "@/components/Artifact/ArtifactCard";
 import { useRouter } from "next/navigation";
+import PreviewModal from "@/components/Artifact/PreviewModal";
 import { CategoryFilterTabs } from "@/components/Artifact/CaegoryFilterTabs";
 import { Card } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -52,6 +53,9 @@ export default function ArtifactLibraryPage() {
     name: string;
   } | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewName, setPreviewName] = useState<string | undefined>(undefined);
 
   const { items, isLoading, totalCount } = useArtifactLibrary({
     category,
@@ -257,11 +261,21 @@ export default function ArtifactLibraryPage() {
                 onSelectChange={(v) =>
                   setSelected((prev) => ({ ...prev, [item.id]: v }))
                 }
-                onPreview={() =>
-                  item.url
-                    ? window.open(item.url, "_blank")
-                    : router.push(`/guidelines/${item.guidelineId}`)
-                }
+                onPreview={() => {
+                  if (
+                    item.url &&
+                    (item.url.toLowerCase().endsWith(".pdf") ||
+                      item.url.toLowerCase().match(/\.(png|jpg|jpeg|gif)$/))
+                  ) {
+                    setPreviewUrl(item.url);
+                    setPreviewName(item.name);
+                    setPreviewOpen(true);
+                  } else if (item.url) {
+                    window.open(item.url, "_blank");
+                  } else {
+                    router.push(`/guidelines/${item.guidelineId}/versions`);
+                  }
+                }}
                 onDelete={() =>
                   setDeleteTarget({ id: item.id, name: item.name })
                 }
@@ -357,6 +371,13 @@ export default function ArtifactLibraryPage() {
         destructive
         isConfirming={deleteMutation.isPending}
         onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+      />
+
+      <PreviewModal
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        url={previewUrl}
+        name={previewName}
       />
 
       <ConfirmDialog
