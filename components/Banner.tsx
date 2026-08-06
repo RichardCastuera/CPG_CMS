@@ -26,7 +26,7 @@ function getFormattedDate(): string {
 
 const Banner = () => {
   const { createGuideline, creating } = useCreateGuideline();
-  const { user, isLoading: userLoading } = useCurrentUser();
+  const { user, loading: userLoading } = useCurrentUser();
 
   const firstName = user?.name?.trim().split(" ")[0] ?? "there";
   const canCreate = user?.role === "admin" || user?.role === "author";
