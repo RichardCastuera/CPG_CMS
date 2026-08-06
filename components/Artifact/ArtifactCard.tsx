@@ -18,6 +18,7 @@ interface ArtifactCardProps {
   fileFormat: string;
   sizeLabel: string;
   guidelineVersionLabel: string;
+  guidelineId?: string | null;
   thumbnailUrl?: string | null;
   selected?: boolean;
   onSelectChange?: (selected: boolean) => void;
@@ -31,6 +32,7 @@ export function ArtifactCard({
   fileFormat,
   sizeLabel,
   guidelineVersionLabel,
+  guidelineId,
   thumbnailUrl,
   selected = false,
   onSelectChange,
@@ -108,10 +110,21 @@ export function ArtifactCard({
         <p className="text-xs text-muted-foreground">
           {style.label} · {fileFormat} · {sizeLabel}
         </p>
-        <span className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground">
-          <Link2 size={10} />
-          {guidelineVersionLabel}
-        </span>
+        {guidelineId ? (
+          <a
+            href={`/guidelines/${guidelineId}`}
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground"
+          >
+            <Link2 size={10} />
+            {guidelineVersionLabel}
+          </a>
+        ) : (
+          <span className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground">
+            <Link2 size={10} />
+            {guidelineVersionLabel}
+          </span>
+        )}
       </button>
     </div>
   );
