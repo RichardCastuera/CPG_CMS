@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { ConditionalSidebar } from "@/components/ConditionalSidebar";
 import { QueryProvider } from "@/components/providers/QueryProviders";
 import { SessionTimeout } from "@/components/SessionTimeout";
+import { Toaster } from "@/components/ui/toast";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -40,6 +41,7 @@ export default function RootLayout({
         <QueryProvider>
           <ConditionalSidebar>{children}</ConditionalSidebar>
           <SessionTimeout />
+          <Toaster />
         </QueryProvider>
       </body>
     </html>
