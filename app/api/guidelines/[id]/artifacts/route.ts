@@ -2,20 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 
-const SIGNED_URL_EXPIRY_SECONDS = 60 * 60; // 1 hour
-
-async function withSignedUrls(
+function withPublicUrls(
   supabase: ReturnType<typeof createClient>,
   artifacts: any[]
 ) {
-  return Promise.all(
-    artifacts.map(async (artifact) => {
-      const { data } = await supabase.storage
-        .from("artifacts")
-        .createSignedUrl(artifact.storage_path, SIGNED_URL_EXPIRY_SECONDS);
-      return { ...artifact, url: data?.signedUrl ?? null };
-    })
-  );
+  return artifacts.map((artifact) => {
+    const { data } = supabase.storage
+      .from("artifacts")
+      .getPublicUrl(artifact.storage_path);
+    return { ...artifact, url: data?.publicUrl ?? null };
+  });
 }
 
 export async function GET(
@@ -35,7 +31,7 @@ export async function GET(
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  const withUrls = await withSignedUrls(supabase, artifacts);
+  const withUrls = withPublicUrls(supabase, artifacts);
   return NextResponse.json(withUrls);
 }
 
@@ -91,6 +87,6 @@ export async function POST(
     return NextResponse.json({ error: insertError.message }, { status: 400 });
   }
 
-  const [withUrl] = await withSignedUrls(supabase, [artifact]);
+  const [withUrl] = withPublicUrls(supabase, [artifact]);
   return NextResponse.json(withUrl);
 }

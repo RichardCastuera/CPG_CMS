@@ -42,6 +42,16 @@ export function ArtifactCard({
   const style = ARTIFACT_CATEGORY_STYLES[category];
   const Icon = style.icon;
 
+  const pillClass =
+    "inline-flex w-full min-w-0 max-w-full items-center gap-1 truncate rounded-full border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground";
+
+  const pillContent = (
+    <>
+      <Link2 size={10} className="shrink-0" />
+      <span className="truncate">{guidelineVersionLabel}</span>
+    </>
+  );
+
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-lg border transition-shadow hover:shadow-md">
       <div className="absolute left-2 top-2 z-10">
@@ -105,7 +115,7 @@ export function ArtifactCard({
         </div>
       </button>
 
-      <button onClick={onPreview} className="space-y-1 p-3 text-left">
+      <button onClick={onPreview} className="min-w-0 space-y-1 p-3 text-left">
         <p className="truncate text-sm font-semibold">{name}</p>
         <p className="text-xs text-muted-foreground">
           {style.label} · {fileFormat} · {sizeLabel}
@@ -114,15 +124,14 @@ export function ArtifactCard({
           <a
             href={`/guidelines/${guidelineId}/versions`}
             onClick={(e) => e.stopPropagation()}
-            className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground"
+            title={guidelineVersionLabel}
+            className={pillClass}
           >
-            <Link2 size={10} />
-            {guidelineVersionLabel}
+            {pillContent}
           </a>
         ) : (
-          <span className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground">
-            <Link2 size={10} />
-            {guidelineVersionLabel}
+          <span title={guidelineVersionLabel} className={pillClass}>
+            {pillContent}
           </span>
         )}
       </button>

@@ -47,12 +47,6 @@ export function GuidelineActionsMenu({
   });
   const isAdmin = me?.role === "admin";
 
-  function handleDelete() {
-    if (confirm(`Delete "${guideline.title}"? This cannot be undone.`)) {
-      onDelete?.(guideline.id);
-    }
-  }
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -64,7 +58,11 @@ export function GuidelineActionsMenu({
       />
       <DropdownMenuContent align="end">
         <DropdownMenuItem
-          onClick={() => router.push(`/guidelines/${guideline.id}`)}
+          onClick={() =>
+            router.push(
+              `/guidelines/${guideline.id}/versions/${guideline.current_version_id}?view=info`,
+            )
+          }
         >
           <FolderOpen size={14} className="mr-2" />
           Open
@@ -89,7 +87,7 @@ export function GuidelineActionsMenu({
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
-              onClick={handleDelete}
+              onClick={() => onDelete?.(guideline.id)}
             >
               <Trash2 size={14} className="mr-2" />
               Delete

@@ -37,11 +37,11 @@ export function getColumns(
           ) ?? guideline.versions[0];
 
         return (
-          <div className="flex max-w-sm flex-col gap-1">
-            <span className="text-sm font-medium text-foreground">
+          <div className="flex w-full min-w-0 max-w-sm flex-col gap-1">
+            <span className="break-words text-sm font-medium text-foreground">
               {guideline.title}
             </span>
-            <span className="text-xs text-muted-foreground">
+            <span className="break-words text-xs text-muted-foreground">
               {guideline.societies.join(" · ")}
               {version && ` · ${version.version_number}`}
             </span>
@@ -58,7 +58,7 @@ export function getColumns(
         );
         const published = version?.published_at ?? version?.effective_date;
         return (
-          <span className="text-sm text-muted-foreground">
+          <span className="block text-sm text-muted-foreground">
             {published ? formatDate(published) : "—"}
           </span>
         );
@@ -68,14 +68,14 @@ export function getColumns(
       id: "archivedFor",
       header: "Archived for",
       cell: ({ row }) => (
-        <span className="rounded-full border bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+        <span className="inline-block rounded-full border bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600">
           {archivedDuration(row.original.updated_at)}
         </span>
       ),
     },
     {
       id: "actions",
-      header: "Actions",
+      header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-2">
           <Button

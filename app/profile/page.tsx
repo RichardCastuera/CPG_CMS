@@ -23,6 +23,8 @@ const ROLE_LABELS: Record<string, string> = {
   reviewer: "Reviewer",
 };
 
+type PasswordStatus = "idle" | "saving" | "saved" | "error";
+
 export default function ProfilePage() {
   const { user, loading } = useCurrentUser();
   const invalidateCurrentUser = useInvalidateCurrentUser();
@@ -32,9 +34,7 @@ export default function ProfilePage() {
   const [nameSaved, setNameSaved] = useState(false);
 
   const [newPassword, setNewPassword] = useState("");
-  const [passwordStatus, setPasswordStatus] = useState<
-    "idle" | "saving" | "saved" | "error"
-  >("idle");
+  const [passwordStatus, setPasswordStatus] = useState<PasswordStatus>("idle");
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -51,7 +51,7 @@ export default function ProfilePage() {
         body: JSON.stringify({ name }),
       });
       if (!res.ok) throw new Error("Failed to save");
-      invalidateCurrentUser(); // sidebar (and anywhere else) picks up the new name immediately
+      invalidateCurrentUser();
       setNameSaved(true);
       setTimeout(() => setNameSaved(false), 2000);
     } catch (err) {
@@ -95,7 +95,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl space-y-6 p-6">
+    <div className="w-full space-y-6 p-6">
       <div>
         <h1 className="text-2xl font-bold">Your profile</h1>
         <p className="text-sm text-muted-foreground">
@@ -103,88 +103,92 @@ export default function ProfilePage() {
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Account</CardTitle>
-          <CardDescription>
-            Your login email and role can't be changed here.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div>
-            <label className="mb-1 block text-sm font-medium">Email</label>
-            <Input
-              value={user.email}
-              disabled
-              className="disabled:text-foreground disabled:opacity-100 disabled:bg-muted"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Role</label>
-            <Input
-              value={ROLE_LABELS[user.role]}
-              disabled
-              className="disabled:text-foreground disabled:opacity-100 disabled:bg-muted"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Account</CardTitle>
+            <CardDescription>
+              Your login email and role can&apos;t be changed here.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <label className="mb-1 block text-sm font-medium">Email</label>
+              <Input
+                value={user.email}
+                disabled
+                className="disabled:text-foreground disabled:opacity-100 disabled:bg-muted"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Role</label>
+              <Input
+                value={ROLE_LABELS[user.role]}
+                disabled
+                className="disabled:text-foreground disabled:opacity-100 disabled:bg-muted"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Display name</CardTitle>
-          <CardDescription>
-            This is shown on comments and audit log entries.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Input value={name} onChange={(e) => setName(e.target.value)} />
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={handleSaveName}
-              disabled={savingName || !name.trim()}
-              className="bg-[#2F6B4F] hover:bg-[#2F6B4F]/90"
-            >
-              {savingName ? "Saving..." : "Save"}
-            </Button>
-            {nameSaved && (
-              <span className="text-sm text-emerald-700">Saved</span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Display name</CardTitle>
+            <CardDescription>
+              This is shown on comments and audit log entries.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handleSaveName}
+                disabled={savingName || !name.trim()}
+                className="bg-[#2F6B4F] hover:bg-[#2F6B4F]/90"
+              >
+                {savingName ? "Saving..." : "Save"}
+              </Button>
+              {nameSaved && (
+                <span className="text-sm text-emerald-700">Saved</span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Password</CardTitle>
-          <CardDescription>
-            Choose a new password for your account.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Input
-            type="password"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="New password"
-          />
-          {passwordError && (
-            <p className="text-sm text-destructive">{passwordError}</p>
-          )}
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={handleChangePassword}
-              disabled={passwordStatus === "saving" || !newPassword}
-              className="bg-[#2F6B4F] hover:bg-[#2F6B4F]/90"
-            >
-              {passwordStatus === "saving" ? "Updating..." : "Update password"}
-            </Button>
-            {passwordStatus === "saved" && (
-              <span className="text-sm text-emerald-700">Updated</span>
+        <Card>
+          <CardHeader>
+            <CardTitle>Password</CardTitle>
+            <CardDescription>
+              Choose a new password for your account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="New password"
+            />
+            {passwordError && (
+              <p className="text-sm text-destructive">{passwordError}</p>
             )}
-          </div>
-        </CardContent>
-      </Card>
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handleChangePassword}
+                disabled={passwordStatus === "saving" || !newPassword}
+                className="bg-[#2F6B4F] hover:bg-[#2F6B4F]/90"
+              >
+                {passwordStatus === "saving"
+                  ? "Updating..."
+                  : "Update password"}
+              </Button>
+              {passwordStatus === "saved" && (
+                <span className="text-sm text-emerald-700">Updated</span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -2,312 +2,200 @@
 
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, BookMarked, X, Link2, CircleOff } from "lucide-react";
-import { RowSelectionState } from "@tanstack/react-table";
+import {
+  ClipboardList,
+  Clock,
+  MessageSquareWarning,
+  CheckCircle2,
+} from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/Guidelines/DataTable";
-import { NewReferenceDialog } from "@/components/References/NewReferenceDialog";
-import { NewReferenceInput } from "@/lib/references";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  LibraryReference,
-  getReferenceColumns,
-} from "@/components/References/Column";
+import { LoadingBar } from "@/components/ui/loading-bar";
 import StatsCard from "@/components/Cards";
 
-type BlockedReference = {
-  id: string;
-  label: string;
-  citedIn: string[];
-};
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { ReviewRow, getReviewColumns } from "@/components/Reviews/Columns";
 
-type DeleteApiError = Error & { blocked?: BlockedReference[] };
-
-type PendingDelete =
-  | { mode: "single"; reference: LibraryReference }
-  | { mode: "bulk" };
-
-async function fetchReferences(): Promise<LibraryReference[]> {
-  const res = await fetch("/api/references");
-  if (!res.ok) throw new Error("Failed to load references");
+async function fetchReviews(): Promise<ReviewRow[]> {
+  const res = await fetch("/api/reviews");
+  if (!res.ok) throw new Error("Failed to load reviews");
   return res.json();
 }
 
-async function deleteReferences(ids: string[]) {
-  const res = await fetch("/api/references", {
-    method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ids }),
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => null);
-    const err: DeleteApiError = new Error(
-      body?.error ?? "Failed to delete reference(s)",
-    );
-    err.blocked = body?.blocked;
-    throw err;
-  }
-  return res.json();
-}
-
-export default function ReferencesPage() {
+export default function Reviews() {
   const queryClient = useQueryClient();
-  const [addOpen, setAddOpen] = useState(false);
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(
-    null,
-  );
-  const [deleteBlocked, setDeleteBlocked] = useState<BlockedReference[] | null>(
-    null,
-  );
+  const { user } = useCurrentUser();
+  const canReview = user?.role === "admin" || user?.role === "reviewer";
+
+  const [changesDialogVersion, setChangesDialogVersion] =
+    useState<ReviewRow | null>(null);
+  const [note, setNote] = useState("");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["references-list"],
-    queryFn: fetchReferences,
+    queryKey: ["reviews-list"],
+    queryFn: fetchReviews,
   });
 
-  const addMutation = useMutation({
-    mutationFn: (input: NewReferenceInput) =>
-      fetch("/api/references", {
+  const approveMutation = useMutation({
+    mutationFn: (versionId: string) =>
+      fetch(`/api/reviews/${versionId}/approve`, { method: "POST" }).then(
+        (res) => {
+          if (!res.ok) throw new Error("Failed to approve");
+        },
+      ),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["reviews-list"] }),
+  });
+
+  const requestChangesMutation = useMutation({
+    mutationFn: ({ versionId, note }: { versionId: string; note: string }) =>
+      fetch(`/api/reviews/${versionId}/request-changes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(input),
-      }).then(async (res) => {
-        if (!res.ok) {
-          const body = await res.json().catch(() => null);
-          throw new Error(body?.error ?? "Failed to add reference");
-        }
-        return res.json();
+        body: JSON.stringify({ note }),
+      }).then((res) => {
+        if (!res.ok) throw new Error("Failed to request changes");
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["references-list"] });
-      setAddOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["reviews-list"] });
+      setChangesDialogVersion(null);
+      setNote("");
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteReferences,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["references-list"] });
-      setRowSelection({});
-      setPendingDelete(null);
-      setDeleteBlocked(null);
-    },
-    onError: (err: DeleteApiError) => {
-      setDeleteBlocked(err.blocked ?? null);
-    },
+  const columns = getReviewColumns({
+    canReview,
+    onApprove: (versionId) => approveMutation.mutate(versionId),
+    onRequestChanges: (row) => setChangesDialogVersion(row),
   });
 
-  const selectedIds = Object.keys(rowSelection).filter(
-    (id) => rowSelection[id],
-  );
+  const reviews = data ?? [];
 
-  const columns = useMemo(
-    () =>
-      getReferenceColumns((reference) => {
-        setDeleteBlocked(null);
-        setPendingDelete({ mode: "single", reference });
-      }),
-    [],
-  );
-
-  const confirmDelete = () => {
-    if (!pendingDelete) return;
-    if (pendingDelete.mode === "single") {
-      deleteMutation.mutate([pendingDelete.reference.id]);
-    } else {
-      deleteMutation.mutate(selectedIds);
-    }
-  };
-
-  const references = data ?? [];
-
-  const bulkActionsBar = (
-    <div className="flex items-center gap-2 rounded-md border border-[#2F6B4F]/30 bg-[#2F6B4F]/5 px-3 py-1.5">
-      <span className="text-sm font-medium text-[#2F6B4F]">
-        {selectedIds.length} selected
-      </span>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-7 gap-1 px-2"
-        onClick={() => setRowSelection({})}
-      >
-        <X size={13} />
-        Clear
-      </Button>
-      <Button
-        variant="destructive"
-        size="sm"
-        className="h-7 gap-1 px-2"
-        onClick={() => {
-          setDeleteBlocked(null);
-          setPendingDelete({ mode: "bulk" });
-        }}
-      >
-        <Trash2 size={13} />
-        Delete
-      </Button>
-    </div>
+  const stats = useMemo(
+    () => ({
+      total: reviews.length,
+      inReview: reviews.filter((r) => r.status === "in_review").length,
+      changesRequested: reviews.filter((r) => r.status === "changes_requested")
+        .length,
+      published: reviews.filter((r) => r.status === "published").length,
+    }),
+    [reviews],
   );
 
   return (
     <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">References</h1>
-            <p className="text-sm text-muted-foreground">
-              Central citation library. Add a reference once, then cite it from
-              any guideline.
-            </p>
-          </div>
-        </div>
-        <Button
-          className="gap-2 bg-[#2F6B4F] hover:bg-[#2F6B4F]/90"
-          onClick={() => setAddOpen(true)}
-        >
-          <Plus size={16} />
-          Add reference
-        </Button>
+      <div>
+        <h1 className="text-2xl font-bold">Reviews</h1>
+        <p className="text-sm text-muted-foreground">
+          Review and approve guideline versions submitted for publication.
+        </p>
       </div>
 
-      {/* Stats strip */}
-      {!isLoading && (
-        <div className="grid grid-cols-3 gap-4">
+      {isLoading ? (
+        <div className="grid grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="p-4">
+              <div className="flex items-center gap-3">
+                <LoadingBar className="h-9 w-9 rounded-lg" />
+                <div className="space-y-2">
+                  <LoadingBar className="h-6 w-10" />
+                  <LoadingBar className="h-3 w-20" />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-4 gap-4">
           <StatsCard
-            icon={BookMarked}
-            label="Total references"
-            value={references.length}
+            icon={ClipboardList}
+            label="Total reviews"
+            value={stats.total}
           />
           <StatsCard
-            icon={Link2}
-            label="With DOI / URL"
-            value={references.filter((r) => r.doi_or_url).length}
+            icon={Clock}
+            label="Pending"
+            value={stats.inReview}
+            iconClassName="rounded-lg bg-amber-100 p-2 text-amber-700"
           />
           <StatsCard
-            icon={CircleOff}
-            label="Uncited"
-            value={references.filter((r) => r.citedIn.length === 0).length}
+            icon={MessageSquareWarning}
+            label="Changes requested"
+            value={stats.changesRequested}
+            iconClassName="rounded-lg bg-rose-100 p-2 text-rose-700"
+          />
+          <StatsCard
+            icon={CheckCircle2}
+            label="Approved"
+            value={stats.published}
+            iconClassName="rounded-lg bg-emerald-100 p-2 text-emerald-700"
           />
         </div>
       )}
 
-      <Card className="px-6 py-4">
+      <Card className="mb-6 px-6">
         {isLoading ? (
-          <p className="py-10 text-center text-sm text-muted-foreground">
-            Loading...
-          </p>
-        ) : references.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 py-14 text-center">
-            <BookMarked size={28} className="text-muted-foreground" />
-            <p className="text-sm font-medium">No references yet</p>
-            <p className="text-sm text-muted-foreground">
-              Add your first reference to start citing it from guidelines.
-            </p>
-            <Button
-              size="sm"
-              className="mt-2 gap-1.5 bg-[#2F6B4F] hover:bg-[#2F6B4F]/90"
-              onClick={() => setAddOpen(true)}
-            >
-              <Plus size={14} />
-              Add reference
-            </Button>
+          <div className="space-y-3 py-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <LoadingBar key={i} className="h-10 w-full" />
+            ))}
           </div>
         ) : (
           <DataTable
             columns={columns}
-            data={references}
-            searchColumn="label"
-            searchPlaceholder="Search references..."
-            enableRowSelection
-            rowSelection={rowSelection}
-            onRowSelectionChange={setRowSelection}
-            getRowId={(row) => row.id}
-            bulkActionsBar={bulkActionsBar}
+            data={reviews}
+            searchColumn="guidelines_title"
+            searchPlaceholder="Search..."
           />
         )}
       </Card>
 
-      <NewReferenceDialog
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        onCreate={(input) => addMutation.mutate(input)}
-        isCreating={addMutation.isPending}
-        submitLabel="Add reference"
-        submittingLabel="Adding..."
-      />
-
-      <AlertDialog
-        open={pendingDelete !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setPendingDelete(null);
-            setDeleteBlocked(null);
-          }
-        }}
+      <Dialog
+        open={!!changesDialogVersion}
+        onOpenChange={(open) => !open && setChangesDialogVersion(null)}
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {pendingDelete?.mode === "single"
-                ? "Delete this reference?"
-                : `Delete ${selectedIds.length} reference${
-                    selectedIds.length > 1 ? "s" : ""
-                  }?`}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {pendingDelete?.mode === "single"
-                ? `"${pendingDelete.reference.label}" will be permanently removed.`
-                : "These references will be permanently removed."}{" "}
-              This can't be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
-          {deleteBlocked && deleteBlocked.length > 0 && (
-            <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
-              <p className="font-medium">
-                {deleteBlocked.length} reference
-                {deleteBlocked.length > 1 ? "s are" : " is"} still cited and
-                can&apos;t be deleted:
-              </p>
-              <ul className="mt-1.5 space-y-1">
-                {deleteBlocked.map((b) => (
-                  <li key={b.id}>
-                    <span className="font-medium">{b.label}</span> — cited in{" "}
-                    {b.citedIn.slice(0, 2).join(", ")}
-                    {b.citedIn.length > 2
-                      ? ` +${b.citedIn.length - 2} more`
-                      : ""}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-red-600 hover:bg-red-600/90"
-              onClick={confirmDelete}
-              disabled={deleteMutation.isPending}
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Request changes</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="What needs to change before this can be approved?"
+            rows={4}
+          />
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setChangesDialogVersion(null)}
             >
-              {deleteMutation.isPending ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              Cancel
+            </Button>
+            <Button
+              className="bg-[#2F6B4F] hover:bg-[#2F6B4F]/90"
+              disabled={!note.trim() || requestChangesMutation.isPending}
+              onClick={() =>
+                changesDialogVersion &&
+                requestChangesMutation.mutate({
+                  versionId: changesDialogVersion.id,
+                  note: note.trim(),
+                })
+              }
+            >
+              {requestChangesMutation.isPending ? "Sending..." : "Send"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

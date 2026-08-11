@@ -24,6 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, UserCog, Mail, UserX } from "lucide-react";
 import { AppUser, UserRole } from "@/lib/users";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 
 interface UserActionsMenuProps {
   user: AppUser;
@@ -38,6 +39,10 @@ export function UserActionsMenu({
   onRemove,
   onResendInvite,
 }: UserActionsMenuProps) {
+  const { user: me } = useCurrentUser();
+  const isAdmin = me?.role === "admin";
+  const isSelf = me?.id === user.id;
+
   const [editOpen, setEditOpen] = useState(false);
   const [role, setRole] = useState<UserRole>(user.role);
 
@@ -56,6 +61,11 @@ export function UserActionsMenu({
     }
   }
 
+  if (!isAdmin) {
+    // Non-admins can't act on any user, including themselves — nothing to show.
+    return null;
+  }
+
   return (
     <>
       <DropdownMenu>
@@ -67,7 +77,7 @@ export function UserActionsMenu({
           }
         />
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setEditOpen(true)}>
+          <DropdownMenuItem disabled={isSelf} onClick={() => setEditOpen(true)}>
             <UserCog size={14} className="mr-2" />
             Change role
           </DropdownMenuItem>
@@ -78,6 +88,7 @@ export function UserActionsMenu({
             </DropdownMenuItem>
           )}
           <DropdownMenuItem
+            disabled={isSelf}
             className="text-destructive focus:text-destructive"
             onClick={handleRemove}
           >

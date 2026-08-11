@@ -1,9 +1,16 @@
-
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
+async function requireAdmin(supabase: ReturnType<typeof createClient>, userId: string) {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .single();
+  return profile?.role === "admin";
+}
 
 export async function GET() {
   const supabase = createClient(await cookies());
@@ -33,6 +40,10 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
+  if (!(await requireAdmin(supabase, user.id))) {
+    return NextResponse.json({ error: "Only admins can invite users" }, { status: 403 });
+  }
+
   const body = await req.json();
   const admin = createAdminClient();
 
@@ -44,8 +55,11 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
   if (body.role && body.role !== "author") {
-    await admin.from("profiles").update({ role: body.role }).eq("id", data.user.id);
-  }
+  await admin.rpc("set_initial_user_role", {
+    p_user_id: data.user.id,
+    p_role: body.role,
+  });
+}
 
   return NextResponse.json({ id: data.user.id });
 }

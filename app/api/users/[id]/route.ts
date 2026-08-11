@@ -4,6 +4,15 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { logAction } from "@/lib/auditLogWriter";
 import { cookies } from "next/headers";
 
+async function requireAdmin(supabase: ReturnType<typeof createClient>, userId: string) {
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", userId)
+    .single();
+  return profile?.role === "admin";
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -14,6 +23,17 @@ export async function PATCH(
   const supabase = createClient(await cookies());
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+
+  if (!(await requireAdmin(supabase, user.id))) {
+    return NextResponse.json({ error: "Only admins can change roles" }, { status: 403 });
+  }
+
+  if (id === user.id && body.role !== "admin") {
+    return NextResponse.json(
+      { error: "You can't remove your own admin access" },
+      { status: 400 }
+    );
+  }
 
   const { data: targetProfile, error: fetchError } = await supabase
     .from("profiles")
@@ -59,11 +79,21 @@ export async function DELETE(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
 
+  if (!(await requireAdmin(supabase, user.id))) {
+    return NextResponse.json({ error: "Only admins can remove users" }, { status: 403 });
+  }
+
+  if (id === user.id) {
+    return NextResponse.json(
+      { error: "You can't remove your own account" },
+      { status: 400 }
+    );
+  }
+
   const admin = createAdminClient();
   const { data: authUser } = await admin.auth.admin.getUserById(id);
   const targetEmail = authUser.user?.email ?? id;
 
-  // Deletes the auth.users row; the profiles row cascades via its FK
   const { error } = await admin.auth.admin.deleteUser(id);
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 

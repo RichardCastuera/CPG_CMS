@@ -38,6 +38,7 @@ import { AppUser, UserRole } from "@/lib/users";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import StatsCard from "@/components/Cards";
 import { LoadingBar } from "@/components/ui/loading-bar";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 
 async function fetchUsers(): Promise<AppUser[]> {
   const res = await fetch("/api/users");
@@ -76,6 +77,9 @@ export default function UsersPage() {
   });
 
   const selectedIds = Object.keys(rowSelection);
+
+  const { user: me } = useCurrentUser();
+  const isAdmin = me?.role === "admin";
 
   const inviteMutation = useMutation({
     mutationFn: (payload: { email: string; role: UserRole }) =>
@@ -250,13 +254,15 @@ export default function UsersPage() {
             Manage who has access to this workspace and what they can do.
           </p>
         </div>
-        <Button
-          className="gap-2 bg-[#2F6B4F] hover:bg-[#2F6B4F]/90"
-          onClick={() => setInviteOpen(true)}
-        >
-          <UserPlus size={16} />
-          Invite user
-        </Button>
+        {isAdmin && (
+          <Button
+            className="gap-2 bg-[#2F6B4F] hover:bg-[#2F6B4F]/90"
+            onClick={() => setInviteOpen(true)}
+          >
+            <UserPlus size={16} />
+            Invite user
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

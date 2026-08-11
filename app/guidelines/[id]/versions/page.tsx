@@ -4,14 +4,9 @@ import { use, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  GitCompare,
-  Plus,
-  FileText,
-  MoreHorizontal,
-} from "lucide-react";
+import { ArrowLeft, Plus, FileText, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +21,7 @@ import {
 import { VersionFormDialog } from "@/components/VersionFormDialog";
 import { GuidelineWithVersions, VersionStatus } from "@/constants";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { LoadingBar } from "@/components/ui/loading-bar";
 
 async function fetchGuidelineInfo(
   guidelineId: string,
@@ -63,6 +59,61 @@ function initials(name: string | null): string {
   const parts = name.trim().split(" ");
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function VersionRowSkeleton({ isFirst }: { isFirst: boolean }) {
+  return (
+    <div className={isFirst ? "px-6 py-4" : "border-t px-6 py-4"}>
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-2">
+          <LoadingBar className="h-5 w-5 rounded-full" />
+          <LoadingBar className="h-4 w-16" />
+          <LoadingBar className="h-4 w-32" />
+          <LoadingBar className="h-5 w-16 rounded-full" />
+        </div>
+        <LoadingBar className="h-7 w-7 rounded-full" />
+      </div>
+
+      <div className="mt-2 flex flex-wrap items-center gap-3">
+        <LoadingBar className="h-3 w-28" />
+        <LoadingBar className="h-3 w-20" />
+      </div>
+
+      <div className="mt-3 flex items-center gap-4">
+        <LoadingBar className="h-4 w-12" />
+        <LoadingBar className="h-4 w-4" />
+      </div>
+    </div>
+  );
+}
+
+function GuidelineVersionsSkeleton() {
+  return (
+    <div className="space-y-6 p-6">
+      <LoadingBar className="h-4 w-32" />
+
+      <div className="flex items-start justify-between">
+        <div className="space-y-2">
+          <LoadingBar className="h-7 w-96" />
+          <LoadingBar className="h-4 w-56" />
+        </div>
+        <LoadingBar className="h-9 w-32 rounded-md" />
+      </div>
+
+      <Card className="overflow-hidden p-0">
+        <div className="space-y-2 border-b px-6 py-4">
+          <LoadingBar className="h-4 w-32" />
+          <LoadingBar className="h-3 w-72" />
+        </div>
+
+        <div>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <VersionRowSkeleton key={i} isFirst={i === 0} />
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
 }
 
 type DialogState =
@@ -209,9 +260,7 @@ export default function GuidelineVersionsPage({
   }
 
   if (isLoading) {
-    return (
-      <p className="p-6 text-sm text-muted-foreground">Loading versions...</p>
-    );
+    return <GuidelineVersionsSkeleton />;
   }
 
   if (!guideline) {
@@ -226,7 +275,7 @@ export default function GuidelineVersionsPage({
   );
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-6">
+    <div className="space-y-6 p-6">
       <Link
         href="/guidelines"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
@@ -243,7 +292,7 @@ export default function GuidelineVersionsPage({
             tracked versions
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-">
           <Button
             className="gap-2 bg-[#2F6B4F] hover:bg-[#2F6B4F]/90"
             onClick={() => setDialogState({ open: true, mode: "create" })}
@@ -254,8 +303,8 @@ export default function GuidelineVersionsPage({
         </div>
       </div>
 
-      <div className="rounded-lg border">
-        <div className="border-b p-4">
+      <Card className="overflow-hidden p-0">
+        <div className="border-b px-6 py-4">
           <h2 className="font-semibold">Version timeline</h2>
           <p className="text-xs text-muted-foreground">
             Newest first. Only versions marked{" "}
@@ -267,7 +316,10 @@ export default function GuidelineVersionsPage({
           {sortedVersions.map((version, i) => {
             const isActive = version.id === guideline.current_version_id;
             return (
-              <div key={version.id} className={i > 0 ? "border-t p-4" : "p-4"}>
+              <div
+                key={version.id}
+                className={i > 0 ? "border-t px-6 py-4" : "px-6 py-4"}
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
                     <span
@@ -409,7 +461,7 @@ export default function GuidelineVersionsPage({
             );
           })}
         </div>
-      </div>
+      </Card>
 
       <VersionFormDialog
         open={dialogState.open}

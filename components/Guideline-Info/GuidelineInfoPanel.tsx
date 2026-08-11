@@ -143,7 +143,7 @@ export function GuidelineInfoPanel({
 
           <div>
             <label className="mb-1 block text-sm font-medium">
-              Publishing societies
+              Lead Developers
             </label>
             <TagInput
               tags={info.societies}

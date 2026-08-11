@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 
-const SIGNED_URL_EXPIRY_SECONDS = 60 * 60;
 
 function formatSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -21,24 +20,20 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  const enriched = await Promise.all(
-    artifacts.map(async (a: any) => {
-      const { data: signed } = await supabase.storage
-        .from("artifacts")
-        .createSignedUrl(a.storage_path, SIGNED_URL_EXPIRY_SECONDS);
+  const enriched = artifacts.map((a: any) => {
+  const { data } = supabase.storage.from("artifacts").getPublicUrl(a.storage_path);
+  return {
+    id: a.id,
+    name: a.name,
+    category: a.category,
+    fileFormat: a.mime_type?.split("/").pop()?.toUpperCase() ?? "FILE",
+    sizeLabel: formatSize(a.size_bytes),
+    guidelineLabel: a.guidelines?.short_title ?? a.guidelines?.title ?? "Unknown",
+    guidelineId: a.guideline_id,
+    url: a.storage_path ? data?.publicUrl ?? null : null,
+  };
+});
 
-      return {
-        id: a.id,
-        name: a.name,
-        category: a.category,
-        fileFormat: a.mime_type?.split("/").pop()?.toUpperCase() ?? "FILE",
-        sizeLabel: formatSize(a.size_bytes),
-        guidelineLabel: a.guidelines?.short_title ?? a.guidelines?.title ?? "Unknown",
-        guidelineId: a.guideline_id,
-        url: signed?.signedUrl ?? null,
-      };
-    })
-  );
+return NextResponse.json(enriched);
 
-  return NextResponse.json(enriched);
 }

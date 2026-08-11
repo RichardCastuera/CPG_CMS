@@ -75,7 +75,10 @@ export function getColumns(
                 Parallel
               </span>
             )}
-            <span className="text-xs text-muted-foreground">
+            <span
+              className="truncate text-xs text-muted-foreground"
+              title={guideline.societies.join(" · ")}
+            >
               {guideline.societies.join(" · ")}
             </span>
           </div>
@@ -86,7 +89,10 @@ export function getColumns(
       accessorKey: "specialty_tags",
       header: "Topic",
       cell: ({ row }) => (
-        <span className="text-xs text-muted-foreground whitespace-normal break-words">
+        <span
+          className="block max-w-[180px] truncate text-xs text-muted-foreground"
+          title={row.original.specialty_tags.join(", ")}
+        >
           {row.original.specialty_tags.join(", ")}
         </span>
       ),

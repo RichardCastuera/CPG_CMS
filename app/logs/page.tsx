@@ -1,9 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { History } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { DataTable } from "@/components/Guidelines/DataTable";
+import { LoadingBar } from "@/components/ui/loading-bar";
 import { auditLogColumns } from "@/components/AuditLog/Columns";
 import { AuditLogEntry } from "@/lib/auditLogWriter";
 
@@ -21,15 +21,21 @@ export default function AuditLogPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex items-center gap-2">
+      <div>
         <h1 className="text-2xl font-bold">Audit log</h1>
+        <p className="text-sm text-muted-foreground">
+          A record of who did what and when, across guidelines, reviews, and
+          references.
+        </p>
       </div>
 
       <Card className="px-6">
         {isLoading ? (
-          <p className="py-10 text-center text-sm text-muted-foreground">
-            Loading...
-          </p>
+          <div className="space-y-3 py-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <LoadingBar key={i} className="h-10 w-full" />
+            ))}
+          </div>
         ) : (
           <DataTable
             columns={auditLogColumns}

@@ -14,12 +14,11 @@ import {
   CheckCircle2,
   FileEdit,
   ClipboardCheck,
-  Layers,
-  FileClock,
-  FilesIcon,
 } from "lucide-react";
 import { LoadingBar } from "@/components/ui/loading-bar";
 import StatsCard from "@/components/Cards";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { toast } from "sonner";
 
 async function fetchGuidelines(): Promise<GuidelineWithVersions[]> {
   const res = await fetch("/api/guidelines");
@@ -77,9 +76,15 @@ function GuidelinesTableSkeleton({ rows = 6 }: { rows?: number }) {
   );
 }
 
+type PendingAction = {
+  type: "archive" | "delete";
+  id: string;
+} | null;
+
 export default function Guidelines() {
   const queryClient = useQueryClient();
   const [choiceOpen, setChoiceOpen] = useState(false);
+  const [pending, setPending] = useState<PendingAction>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["guidelines-list"],
@@ -95,27 +100,52 @@ export default function Guidelines() {
   const archiveMutation = useMutation({
     mutationFn: (id: string) =>
       fetch(`/api/guidelines/${id}/archive`, { method: "POST" }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["guidelines-list"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["guidelines-list"] });
+      setPending(null);
+      toast.success("Guideline archived");
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to archive guideline",
+      );
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) =>
       fetch(`/api/guidelines/${id}`, { method: "DELETE" }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["guidelines-list"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["guidelines-list"] });
+      setPending(null);
+      toast.success("Guideline deleted");
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to delete guideline",
+      );
+    },
   });
 
   const forcePublishMutation = useMutation({
     mutationFn: (id: string) =>
       fetch(`/api/guidelines/${id}/force-publish`, { method: "POST" }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["guidelines-list"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["guidelines-list"] });
+      toast.success("Guideline force-published");
+    },
+    onError: (error) => {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to force-publish guideline",
+      );
+    },
   });
 
   const columns = getColumns({
-    onArchive: (id) => archiveMutation.mutate(id),
-    onDelete: (id) => deleteMutation.mutate(id),
+    onArchive: (id) => setPending({ type: "archive", id }),
+    onDelete: (id) => setPending({ type: "delete", id }),
     onForcePublish: (id) => forcePublishMutation.mutate(id),
   });
 
@@ -129,15 +159,32 @@ export default function Guidelines() {
     (g: any) => g.status === "in_review",
   ).length;
 
-  const compendiumCount = guidelines.filter(
-    (g: any) => g.type === "compendium",
-  ).length;
-  const interimCount = guidelines.filter(
-    (g: any) => g.type === "interim",
-  ).length;
-  const omnibusCount = guidelines.filter(
-    (g: any) => g.type === "omnibus",
-  ).length;
+  const isConfirming =
+    pending?.type === "archive"
+      ? archiveMutation.isPending
+      : pending?.type === "delete"
+        ? deleteMutation.isPending
+        : false;
+
+  const confirmError =
+    pending?.type === "archive"
+      ? archiveMutation.error instanceof Error
+        ? archiveMutation.error.message
+        : null
+      : pending?.type === "delete"
+        ? deleteMutation.error instanceof Error
+          ? deleteMutation.error.message
+          : null
+        : null;
+
+  function handleConfirm() {
+    if (!pending) return;
+    if (pending.type === "archive") {
+      archiveMutation.mutate(pending.id);
+    } else {
+      deleteMutation.mutate(pending.id);
+    }
+  }
 
   return (
     <div className="space-y-6 p-6">
@@ -212,6 +259,28 @@ export default function Guidelines() {
       {canCreate && (
         <CreateGuidelineChoice open={choiceOpen} onOpenChange={setChoiceOpen} />
       )}
+
+      <ConfirmDialog
+        open={pending !== null}
+        onOpenChange={(open) => {
+          if (!open) setPending(null);
+        }}
+        title={
+          pending?.type === "archive"
+            ? "Archive guideline?"
+            : "Delete guideline?"
+        }
+        description={
+          pending?.type === "archive"
+            ? "This guideline will be moved to the archive and hidden from active lists. You can restore it later."
+            : "This will permanently delete the guideline and all of its versions. This action cannot be undone."
+        }
+        confirmLabel={pending?.type === "archive" ? "Archive" : "Delete"}
+        destructive={pending?.type === "delete"}
+        isConfirming={isConfirming}
+        errorMessage={confirmError}
+        onConfirm={handleConfirm}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
+import { createAdminClient } from "./supabase/admin";
 
 export interface AuditLogEntry {
   id: string;
@@ -25,8 +26,8 @@ export async function logAction({
   target,
   guidelineId,
 }: LogActionParams) {
-  const supabase = createClient(await cookies());
-  const { error } = await supabase.from("audit_log").insert({
+  const admin = createAdminClient();
+  const { error } = await admin.from("audit_log").insert({
     actor_id: actorId,
     action,
     target,
